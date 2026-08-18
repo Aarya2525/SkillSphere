@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: skillsphere-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - skillsphere_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  skillsphere_postgres_data: 
