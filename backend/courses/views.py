@@ -2,8 +2,8 @@ from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Course, Module
-from .serializers import CourseSerializer, ModuleSerializer
+from .models import Course, Module, Lesson
+from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
 
 
 class CourseListCreateView(generics.ListCreateAPIView):
@@ -46,6 +46,28 @@ class ModuleListCreateView(generics.ListCreateAPIView):
         ):
             raise PermissionDenied(
                 "You can only add modules to your own courses."
+            )
+
+        serializer.save()
+
+
+class LessonListCreateView(generics.ListCreateAPIView):
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Lesson.objects.all()
+
+    def perform_create(self, serializer):
+        module = serializer.validated_data["module"]
+        course = module.course
+
+        if (
+            self.request.user.role != "ADMIN"
+            and course.instructor != self.request.user
+        ):
+            raise PermissionDenied(
+                "You can only add lessons to your own courses."
             )
 
         serializer.save() 
