@@ -109,4 +109,13 @@ urlpatterns = [
         "certificates/",
         include("certificates.api_urls"),
     ),
+
+    # ============================================================
+    # REVIEWS & RATINGS
+    # ============================================================
+
+    path(
+        "reviews/",
+        include("reviews.urls"),
+    ),
 ] 
