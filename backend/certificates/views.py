@@ -10,6 +10,7 @@ from rest_framework import status
 from courses.models import Course, Lesson
 from enrollments.models import Enrollment
 from learning.models import LessonProgress
+from notifications.models import Notification
 
 from .models import Certificate
 from .serializers import CertificateSerializer
@@ -157,6 +158,24 @@ class CertificateCreateView(generics.CreateAPIView):
                 course=course,
             )
 
+        # --------------------------------------------------------
+        # Create certificate notification
+        # --------------------------------------------------------
+
+        Notification.objects.create(
+            recipient=student,
+            notification_type="CERTIFICATE",
+            title="Certificate Earned",
+            message=(
+                f"Congratulations! You have completed "
+                f"{course.title} and earned your certificate."
+            ),
+        )
+
+        # --------------------------------------------------------
+        # Return certificate
+        # --------------------------------------------------------
+
         return Response(
             {
                 "message": "Certificate issued successfully.",
@@ -213,7 +232,8 @@ class StudentCertificateDetailView(generics.RetrieveAPIView):
         ).select_related(
             "student",
             "course",
-        ) 
+        )
+
 
 # ============================================================
 # PUBLIC CERTIFICATE VERIFICATION
@@ -230,4 +250,4 @@ class CertificateVerifyView(generics.RetrieveAPIView):
         return Certificate.objects.select_related(
             "student",
             "course",
-        )     
+        ) 

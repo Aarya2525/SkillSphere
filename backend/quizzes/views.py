@@ -5,6 +5,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from notifications.models import Notification
+
 from .models import (
     Quiz,
     Question,
@@ -261,6 +263,20 @@ class QuizSubmitView(generics.CreateAPIView):
                 )
                 for answer in answers
             ]
+        )
+
+        # --------------------------------------------------------
+        # Create notification
+        # --------------------------------------------------------
+
+        Notification.objects.create(
+            recipient=student,
+            notification_type="QUIZ",
+            title="Quiz Submitted Successfully",
+            message=(
+                f"You scored {score}/{total_questions} "
+                f"in {quiz.title}."
+            ),
         )
 
         # --------------------------------------------------------

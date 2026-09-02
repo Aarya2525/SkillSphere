@@ -118,4 +118,13 @@ urlpatterns = [
         "reviews/",
         include("reviews.urls"),
     ),
+
+    # ============================================================
+    # NOTIFICATIONS
+    # ============================================================
+
+    path(
+        "notifications/",
+        include("notifications.urls"),
+    ),
 ] 

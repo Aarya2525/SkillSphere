@@ -2,6 +2,8 @@ from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 
+from notifications.models import Notification
+
 from .models import Enrollment
 from .serializers import EnrollmentSerializer
 
@@ -41,4 +43,11 @@ class EnrollmentListCreateView(generics.ListCreateAPIView):
                 "You are already enrolled in this course."
             )
 
-        serializer.save(student=user) 
+        enrollment = serializer.save(student=user)
+
+        Notification.objects.create(
+            recipient=user,
+            notification_type="ENROLLMENT",
+            title="Course Enrollment Successful",
+            message=f"You have successfully enrolled in {course.title}.",
+        ) 

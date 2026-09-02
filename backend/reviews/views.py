@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from courses.models import Course
 from enrollments.models import Enrollment
+from notifications.models import Notification
 
 from .models import Review
 from .serializers import ReviewSerializer
@@ -62,7 +63,26 @@ class ReviewListCreateView(generics.ListCreateAPIView):
                 "You have already reviewed this course."
             )
 
-        serializer.save(student=student)
+        # --------------------------------------------------------
+        # Create review
+        # --------------------------------------------------------
+
+        review = serializer.save(student=student)
+
+        # --------------------------------------------------------
+        # Notify course instructor
+        # --------------------------------------------------------
+
+        Notification.objects.create(
+            recipient=course.instructor,
+            notification_type="REVIEW",
+            title="New Course Review",
+            message=(
+                f"{student.username} reviewed your course "
+                f"{course.title} with a rating of "
+                f"{review.rating}/5."
+            ),
+        )
 
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
