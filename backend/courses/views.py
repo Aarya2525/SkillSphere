@@ -71,9 +71,27 @@ class ModuleListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Module.objects.all()
+        user = self.request.user
+        course_id = self.request.query_params.get("course")
+
+        if user.role == "ADMIN":
+            qs = Module.objects.all()
+        elif user.role == "INSTRUCTOR":
+            qs = Module.objects.filter(course__instructor=user)
+        else:
+            qs = Module.objects.filter(course__is_published=True)
+
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+
+        return qs
 
     def perform_create(self, serializer):
+        if self.request.user.role not in ["INSTRUCTOR", "ADMIN"]:
+            raise PermissionDenied(
+                "Only instructors and admins can create modules."
+            )
+
         course = serializer.validated_data["course"]
 
         if (
@@ -124,9 +142,30 @@ class LessonListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Lesson.objects.all()
+        user = self.request.user
+        module_id = self.request.query_params.get("module")
+        course_id = self.request.query_params.get("course")
+
+        if user.role == "ADMIN":
+            qs = Lesson.objects.all()
+        elif user.role == "INSTRUCTOR":
+            qs = Lesson.objects.filter(module__course__instructor=user)
+        else:
+            qs = Lesson.objects.filter(module__course__is_published=True)
+
+        if module_id:
+            qs = qs.filter(module_id=module_id)
+        if course_id:
+            qs = qs.filter(module__course_id=course_id)
+
+        return qs
 
     def perform_create(self, serializer):
+        if self.request.user.role not in ["INSTRUCTOR", "ADMIN"]:
+            raise PermissionDenied(
+                "Only instructors and admins can create lessons."
+            )
+
         module = serializer.validated_data["module"]
         course = module.course
 
