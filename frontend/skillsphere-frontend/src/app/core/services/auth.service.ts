@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface LoginRequest {
   username: string;
@@ -34,7 +35,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://127.0.0.1:8000/api/auth';
+    `${environment.apiUrl}/auth`;
 
   private readonly accessTokenKey =
     'skillsphere_access_token';

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Notification {
   id: number;
@@ -25,7 +26,7 @@ export class NotificationService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://127.0.0.1:8000/api/notifications';
+    `${environment.apiUrl}/notifications`;
 
   private readonly unreadCountSubject =
     new BehaviorSubject<number>(0);

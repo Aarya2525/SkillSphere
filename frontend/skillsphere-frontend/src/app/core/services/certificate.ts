@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Certificate {
   id: number;
@@ -29,7 +30,7 @@ export class CertificateService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://127.0.0.1:8000/api/certificates';
+    `${environment.apiUrl}/certificates`;
 
   getCertificates(): Observable<Certificate[]> {
     return this.http.get<Certificate[]>(
