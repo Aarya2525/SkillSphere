@@ -1,0 +1,146 @@
+<div class="certificates-page">
+
+  @if (loading) {
+    <div class="state-card">
+      <div class="state-icon">🏆</div>
+      <h2>Loading your certificates...</h2>
+      <p>Getting your earned certificates ready.</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-card">
+      <div class="state-icon">⚠️</div>
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="loadCertificates()"
+      >
+        Try Again
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && certificates.length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon">🏆</div>
+
+      <span class="page-label">Certificates</span>
+
+      <h1>No certificates yet</h1>
+
+      <p>
+        Complete your enrolled courses to earn certificates
+        and showcase your achievements.
+      </p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goToCourses()"
+      >
+        Browse Courses
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && certificates.length > 0) {
+
+    <header class="page-header">
+      <div>
+        <span class="page-label">Achievements</span>
+
+        <h1>My Certificates</h1>
+
+        <p>
+          View and verify the certificates you have earned.
+        </p>
+      </div>
+
+      <div class="certificate-count">
+        <strong>{{ certificates.length }}</strong>
+        <span>
+          {{ certificates.length === 1 ? 'Certificate' : 'Certificates' }}
+        </span>
+      </div>
+    </header>
+
+    <section class="certificate-grid">
+
+      @for (certificate of certificates; track certificate.id) {
+
+        <article class="certificate-card">
+
+          <div class="certificate-top">
+            <div class="certificate-icon">
+              🏆
+            </div>
+
+            <span class="completion-badge">
+              {{ certificate.completion_percentage }}% Complete
+            </span>
+          </div>
+
+          <div class="certificate-content">
+
+            <span class="certificate-label">
+              Certificate of Completion
+            </span>
+
+            <h2>
+              {{ certificate.course_title }}
+            </h2>
+
+            <div class="certificate-details">
+
+              <div class="detail-item">
+                <span>Student</span>
+                <strong>{{ certificate.student_name }}</strong>
+              </div>
+
+              <div class="detail-item">
+                <span>Issued On</span>
+                <strong>{{ formatDate(certificate.issued_at) }}</strong>
+              </div>
+
+            </div>
+
+            <div class="certificate-id">
+              <span>Certificate ID</span>
+              <code>{{ certificate.certificate_id }}</code>
+            </div>
+
+          </div>
+
+          <div class="certificate-actions">
+
+            <button
+              type="button"
+              class="view-button"
+              (click)="viewCertificate(certificate.id)"
+            >
+              View Certificate
+            </button>
+
+            <button
+              type="button"
+              class="verify-button"
+              (click)="verifyCertificate(certificate.certificate_id)"
+            >
+              Verify
+            </button>
+
+          </div>
+
+        </article>
+
+      }
+
+    </section>
+
+  }
+
+</div> 

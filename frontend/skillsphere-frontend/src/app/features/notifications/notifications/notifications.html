@@ -1,0 +1,191 @@
+<div class="notifications-page">
+
+  @if (loading) {
+    <div class="state-card">
+      <div class="state-icon">🔔</div>
+      <h2>Loading notifications...</h2>
+      <p>Getting your latest notifications.</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-card">
+      <div class="state-icon">⚠️</div>
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="loadNotifications()"
+      >
+        Try Again
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage) {
+
+    <header class="notifications-header">
+      <div>
+        <span class="page-label">Notifications</span>
+
+        <h1>Your Notifications</h1>
+
+        <p>
+          Stay updated with your learning activity and
+          SkillSphere account.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        @if (unreadCount > 0) {
+          <button
+            type="button"
+            class="primary-button"
+            [disabled]="markingAllRead"
+            (click)="markAllAsRead()"
+          >
+            @if (markingAllRead) {
+              Marking as Read...
+            } @else {
+              Mark All as Read
+            }
+          </button>
+        }
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="goToDashboard()"
+        >
+          Dashboard
+        </button>
+      </div>
+    </header>
+
+    <section class="notification-summary">
+      <div class="summary-icon">🔔</div>
+
+      <div>
+        <strong>{{ notifications.length }}</strong>
+        <span>Total Notifications</span>
+      </div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-icon unread-summary-icon">●</div>
+
+      <div>
+        <strong>{{ unreadCount }}</strong>
+        <span>Unread</span>
+      </div>
+    </section>
+
+    @if (notifications.length > 0) {
+
+      <section class="notification-list">
+
+        @for (
+          notification of notifications;
+          track notification.id
+        ) {
+
+          <article
+            class="notification-card"
+            [class.unread]="!notification.is_read"
+            [class.read]="notification.is_read"
+          >
+
+            <div class="notification-icon">
+              {{ getNotificationIcon(notification.notification_type) }}
+            </div>
+
+            <div class="notification-content">
+
+              <div class="notification-top">
+
+                <div>
+                  <span class="notification-type">
+                    {{ notification.notification_type }}
+                  </span>
+
+                  <h2>
+                    {{ notification.title }}
+                  </h2>
+                </div>
+
+                @if (!notification.is_read) {
+                  <span class="unread-badge">
+                    Unread
+                  </span>
+                } @else {
+                  <span class="read-badge">
+                    Read
+                  </span>
+                }
+
+              </div>
+
+              <p class="notification-message">
+                {{ notification.message }}
+              </p>
+
+              <div class="notification-footer">
+
+                <span class="notification-date">
+                  {{ formatDate(notification.created_at) }}
+                  ·
+                  {{ formatTime(notification.created_at) }}
+                </span>
+
+                @if (!notification.is_read) {
+                  <button
+                    type="button"
+                    class="mark-read-button"
+                    (click)="markAsRead(notification)"
+                  >
+                    Mark as read
+                  </button>
+                }
+
+              </div>
+
+            </div>
+
+          </article>
+
+        }
+
+      </section>
+
+    } @else {
+
+      <section class="empty-notifications">
+
+        <div class="empty-icon">
+          🔔
+        </div>
+
+        <h2>No notifications yet</h2>
+
+        <p>
+          You're all caught up. New learning activity
+          and updates will appear here.
+        </p>
+
+        <button
+          type="button"
+          class="primary-button"
+          (click)="goToDashboard()"
+        >
+          Back to Dashboard
+        </button>
+
+      </section>
+
+    }
+
+  }
+
+</div> 

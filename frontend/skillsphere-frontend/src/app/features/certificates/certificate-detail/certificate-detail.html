@@ -1,0 +1,154 @@
+<div class="certificate-detail-page">
+
+  @if (loading) {
+    <div class="state-card">
+      <div class="state-icon">🏆</div>
+      <h2>Loading certificate...</h2>
+      <p>Preparing your certificate.</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-card">
+      <div class="state-icon">⚠️</div>
+      <h2>Certificate unavailable</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goBack()"
+      >
+        Back to Certificates
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && certificate) {
+
+    <div class="page-header">
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        ← Back to Certificates
+      </button>
+
+      <div class="header-actions">
+        <button
+          type="button"
+          class="verify-button"
+          (click)="verifyCertificate()"
+        >
+          Verify Certificate
+        </button>
+
+        <button
+          type="button"
+          class="print-button"
+          (click)="printCertificate()"
+        >
+          Print Certificate
+        </button>
+      </div>
+    </div>
+
+    <main class="certificate-wrapper">
+
+      <article class="certificate">
+
+        <div class="certificate-border">
+
+          <div class="certificate-inner">
+
+            <div class="certificate-header">
+
+              <div class="brand-mark">
+                <span>S</span>
+              </div>
+
+              <div class="brand-name">
+                SkillSphere
+              </div>
+
+              <div class="certificate-label">
+                CERTIFICATE OF COMPLETION
+              </div>
+
+            </div>
+
+            <div class="certificate-body">
+
+              <p class="presented-text">
+                This certificate is proudly presented to
+              </p>
+
+              <h1>
+                {{ certificate.student_name }}
+              </h1>
+
+              <div class="name-line"></div>
+
+              <p class="completion-text">
+                for successfully completing the course
+              </p>
+
+              <h2>
+                {{ certificate.course_title }}
+              </h2>
+
+              <p class="achievement-text">
+                with a completion rate of
+                <strong>
+                  {{ certificate.completion_percentage }}%
+                </strong>
+              </p>
+
+              <p class="recognition-text">
+                This certificate recognizes the successful completion
+                of the required learning activities and course content.
+              </p>
+
+            </div>
+
+            <div class="certificate-footer">
+
+              <div class="footer-item">
+                <span class="footer-line"></span>
+                <strong>Issue Date</strong>
+                <span>
+                  {{ formatDate(certificate.issued_at) }}
+                </span>
+              </div>
+
+              <div class="seal">
+                <span>✓</span>
+                <small>COMPLETED</small>
+              </div>
+
+              <div class="footer-item">
+                <span class="footer-line"></span>
+                <strong>Certificate ID</strong>
+                <span class="certificate-id">
+                  {{ certificate.certificate_id }}
+                </span>
+              </div>
+
+            </div>
+
+            <div class="certificate-branding">
+              SkillSphere · Learn. Practice. Grow.
+            </div>
+
+          </div>
+
+        </div>
+
+      </article>
+
+    </main>
+
+  }
+
+</div> 

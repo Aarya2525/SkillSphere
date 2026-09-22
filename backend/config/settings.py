@@ -24,10 +24,11 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles", 
+    "django.contrib.staticfiles",
 
     # Third-party apps
     "rest_framework",
+    "corsheaders",
 
     # Project apps
     "accounts",
@@ -36,13 +37,14 @@ INSTALLED_APPS = [
     "learning",
     "quizzes",
     "certificates",
-    "reviews", 
-    "notifications", 
+    "reviews",
+    "notifications",
 ]
 
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -84,7 +86,7 @@ DATABASES = {
         "USER": "skillsphere_user",
         "PASSWORD": "skillsphere_password",
         "HOST": "localhost",
-        "PORT": "5433",
+        "PORT": "5436",
     }
 }
 
@@ -150,4 +152,13 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-}  
+}
+
+
+# CORS Configuration
+# Allow the Angular development server to access Django APIs.
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+] 

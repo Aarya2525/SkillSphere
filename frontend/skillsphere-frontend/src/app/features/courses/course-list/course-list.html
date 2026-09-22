@@ -1,0 +1,107 @@
+<div class="courses-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Courses</h1>
+
+      <p>
+        Explore available courses and start learning.
+      </p>
+    </div>
+  </div>
+
+  @if (loading) {
+
+    <div class="state-card">
+      <p>Loading courses...</p>
+    </div>
+
+  }
+
+  @if (errorMessage) {
+
+    <div class="error-card">
+
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        (click)="loadCourses()"
+      >
+        Try Again
+      </button>
+
+    </div>
+
+  }
+
+  @if (!loading && !errorMessage && courses.length === 0) {
+
+    <div class="state-card">
+
+      <h2>No courses available</h2>
+
+      <p>
+        There are currently no published courses.
+      </p>
+
+    </div>
+
+  }
+
+  @if (!loading && !errorMessage && courses.length > 0) {
+
+    <div class="course-grid">
+
+      @for (course of courses; track course.id) {
+
+        <article class="course-card">
+
+          <div class="course-icon">
+            📚
+          </div>
+
+          <div class="course-content">
+
+            <h2>
+              {{ course.title }}
+            </h2>
+
+            <p class="course-description">
+              {{ course.description }}
+            </p>
+
+            <div class="course-info">
+
+              <span>
+                👨‍🏫 {{ course.instructor_name }}
+              </span>
+
+              <span>
+                {{
+                  course.is_published
+                    ? 'Published'
+                    : 'Draft'
+                }}
+              </span>
+
+            </div>
+
+            <button
+              type="button"
+              (click)="viewCourse(course.id)"
+            >
+              View Course
+            </button>
+
+          </div>
+
+        </article>
+
+      }
+
+    </div>
+
+  }
+
+</div> 

@@ -1,0 +1,121 @@
+<div class="certificate-verify-page">
+
+  @if (loading) {
+    <div class="state-card">
+      <div class="state-icon">🔍</div>
+      <h1>Verifying Certificate</h1>
+      <p>
+        Checking the certificate against SkillSphere records...
+      </p>
+    </div>
+  }
+
+  @if (!loading && verified && certificate) {
+
+    <div class="verification-card">
+
+      <div class="verified-icon">
+        ✓
+      </div>
+
+      <span class="verification-label">
+        VERIFIED CERTIFICATE
+      </span>
+
+      <h1>Certificate is Valid</h1>
+
+      <p class="verification-message">
+        This certificate has been successfully verified against
+        SkillSphere records.
+      </p>
+
+      <div class="certificate-summary">
+
+        <div class="summary-row">
+          <span>Student</span>
+          <strong>{{ certificate.student_name }}</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Course</span>
+          <strong>{{ certificate.course_title }}</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Completion</span>
+          <strong>
+            {{ certificate.completion_percentage }}%
+          </strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Issued On</span>
+          <strong>
+            {{ formatDate(certificate.issued_at) }}
+          </strong>
+        </div>
+
+        <div class="summary-row certificate-id-row">
+          <span>Certificate ID</span>
+          <code>{{ certificate.certificate_id }}</code>
+        </div>
+
+      </div>
+
+      <div class="verification-footer">
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <div>
+            <strong>SkillSphere</strong>
+            <span>Learn. Practice. Grow.</span>
+          </div>
+        </div>
+
+        <span class="verified-status">
+          ✓ Authentic Record
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goToCertificates()"
+      >
+        Go to My Certificates
+      </button>
+
+    </div>
+
+  }
+
+  @if (!loading && !verified) {
+
+    <div class="invalid-card">
+
+      <div class="invalid-icon">
+        ✕
+      </div>
+
+      <span class="verification-label">
+        CERTIFICATE VERIFICATION
+      </span>
+
+      <h1>Certificate Not Verified</h1>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goToCertificates()"
+      >
+        Back to Certificates
+      </button>
+
+    </div>
+
+  }
+
+</div> 

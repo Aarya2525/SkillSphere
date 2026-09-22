@@ -122,6 +122,35 @@ class CertificateCreateView(generics.CreateAPIView):
             )
 
         # --------------------------------------------------------
+        # Require quiz passed if course has published quizzes
+        # --------------------------------------------------------
+
+        published_quizzes = course.quizzes.filter(is_published=True)
+
+        if published_quizzes.exists():
+            from quizzes.models import QuizAttempt
+
+            has_passed_quiz = QuizAttempt.objects.filter(
+                student=student,
+                quiz__in=published_quizzes,
+                is_passed=True,
+            ).exists()
+
+            if not has_passed_quiz:
+                return Response(
+                    {
+                        "error": (
+                            "You must pass the course assessment quiz "
+                            "before claiming your certificate."
+                        ),
+                        "course": course.id,
+                        "course_title": course.title,
+                        "quiz_required": True,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # --------------------------------------------------------
         # Prevent duplicate certificate
         # --------------------------------------------------------
 

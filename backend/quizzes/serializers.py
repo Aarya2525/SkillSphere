@@ -42,14 +42,28 @@ class QuizSerializer(serializers.ModelSerializer):
         many=True,
         read_only=True,
     )
+    course_title = serializers.CharField(
+        source="course.title",
+        read_only=True,
+    )
+
+    def validate_passing_score(self, value):
+        if value < 1 or value > 100:
+            raise serializers.ValidationError(
+                "Passing score must be between 1 and 100."
+            )
+        return value
 
     class Meta:
         model = Quiz
         fields = [
             "id",
             "course",
+            "course_title",
             "title",
             "description",
+            "passing_score",
+            "is_published",
             "questions",
         ]
 
@@ -90,14 +104,29 @@ class StudentQuizSerializer(serializers.ModelSerializer):
         many=True,
         read_only=True,
     )
+    course_title = serializers.CharField(
+        source="course.title",
+        read_only=True,
+    )
 
     class Meta:
         model = Quiz
         fields = [
             "id",
             "course",
+            "course_title",
             "title",
             "description",
+            "passing_score",
+            "questions",
+        ]
+        read_only_fields = [
+            "id",
+            "course",
+            "course_title",
+            "title",
+            "description",
+            "passing_score",
             "questions",
         ]
 
@@ -117,6 +146,23 @@ class AnswerSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    is_correct = serializers.SerializerMethodField()
+
+    correct_option_text = serializers.SerializerMethodField()
+
+    def get_is_correct(self, obj):
+        return obj.selected_option.is_correct
+
+    def get_correct_option_text(self, obj):
+        correct_option = obj.question.options.filter(
+            is_correct=True
+        ).first()
+
+        if correct_option:
+            return correct_option.text
+
+        return None
+
     class Meta:
         model = Answer
         fields = [
@@ -126,12 +172,16 @@ class AnswerSerializer(serializers.ModelSerializer):
             "question_text",
             "selected_option",
             "selected_option_text",
+            "is_correct",
+            "correct_option_text",
         ]
 
         read_only_fields = [
             "attempt",
             "question_text",
             "selected_option_text",
+            "is_correct",
+            "correct_option_text",
         ]
 
 
@@ -150,6 +200,11 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    passing_score = serializers.IntegerField(
+        source="quiz.passing_score",
+        read_only=True,
+    )
+
     answers = AnswerSerializer(
         many=True,
         read_only=True,
@@ -164,6 +219,10 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
             "quiz",
             "quiz_title",
             "score",
+            "total_questions",
+            "percentage",
+            "is_passed",
+            "passing_score",
             "submitted_at",
             "answers",
         ]
@@ -172,6 +231,10 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
             "student",
             "student_name",
             "score",
+            "total_questions",
+            "percentage",
+            "is_passed",
+            "passing_score",
             "submitted_at",
             "answers",
         ]
@@ -261,7 +324,7 @@ class QuizSubmissionSerializer(serializers.Serializer):
 
         attrs["answers"] = validated_answers
 
-        return attrs 
+        return attrs
 
 
 # ============================================================
@@ -279,6 +342,11 @@ class InstructorQuizAttemptSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    passing_score = serializers.IntegerField(
+        source="quiz.passing_score",
+        read_only=True,
+    )
+
     class Meta:
         model = QuizAttempt
         fields = [
@@ -288,6 +356,10 @@ class InstructorQuizAttemptSerializer(serializers.ModelSerializer):
             "quiz",
             "quiz_title",
             "score",
+            "total_questions",
+            "percentage",
+            "is_passed",
+            "passing_score",
             "submitted_at",
         ]
 
@@ -298,5 +370,9 @@ class InstructorQuizAttemptSerializer(serializers.ModelSerializer):
             "quiz",
             "quiz_title",
             "score",
+            "total_questions",
+            "percentage",
+            "is_passed",
+            "passing_score",
             "submitted_at",
-        ]     
+        ] 

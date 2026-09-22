@@ -1,0 +1,57 @@
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="login-header">
+      <h1>SkillSphere</h1>
+      <p>Sign in to continue learning</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+
+      <div class="form-group">
+        <label for="username">Username</label>
+
+        <input
+          id="username"
+          type="text"
+          name="username"
+          [(ngModel)]="username"
+          placeholder="Enter your username"
+          autocomplete="username"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        />
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        [disabled]="loading"
+      >
+        @if (loading) {
+          Signing in...
+        } @else {
+          Sign In
+        }
+      </button>
+
+    </form>
+
+  </div>
+</div> 

@@ -1,0 +1,217 @@
+<div class="attempt-detail-page">
+
+  @if (loading) {
+    <div class="state-card">
+      <p>Loading quiz attempt...</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-card">
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goBack()"
+      >
+        Back to Quiz History
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && attempt) {
+
+    <div class="page-header">
+
+      <div>
+        <span class="page-label">Quiz Attempt</span>
+
+        <h1>{{ attempt.quiz_title }}</h1>
+
+        <p>
+          Attempt #{{ attempt.id }}
+          · Submitted {{ formatDate(attempt.submitted_at) }}
+          at {{ formatTime(attempt.submitted_at) }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        ← Back to History
+      </button>
+
+    </div>
+
+    <div class="score-overview">
+
+      <div class="score-card">
+
+        <div class="score-circle">
+          <strong>{{ percentage }}%</strong>
+          <span>Score</span>
+        </div>
+
+        <div class="score-content">
+          <span class="score-label">Your Result</span>
+
+          <h2>
+            {{ attempt.score }}/{{ attempt.answers.length }}
+          </h2>
+
+          <span
+            class="score-status"
+            [class]="getScoreClass()"
+          >
+            {{ percentage }}%
+          </span>
+        </div>
+
+      </div>
+
+      <div class="info-card">
+
+        <div class="info-item">
+          <span class="info-label">Quiz</span>
+          <strong>{{ attempt.quiz_title }}</strong>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Total Questions</span>
+          <strong>{{ attempt.answers.length }}</strong>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Correct Answers</span>
+          <strong>{{ attempt.score }}</strong>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Attempt ID</span>
+          <strong>#{{ attempt.id }}</strong>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="answers-card">
+
+      <div class="answers-header">
+        <div>
+          <span class="section-label">Review</span>
+
+          <h2>Your Answers</h2>
+
+          <p>
+            Review your answers and see the correct answer for each question.
+          </p>
+        </div>
+      </div>
+
+      <div class="answer-list">
+
+        @for (
+          answer of attempt.answers;
+          track answer.id
+        ) {
+
+          <article
+            class="answer-item"
+            [class.correct-answer]="answer.is_correct"
+            [class.incorrect-answer]="!answer.is_correct"
+          >
+
+            <div class="question-number">
+              {{ $index + 1 }}
+            </div>
+
+            <div class="answer-content">
+
+              <div class="question-header">
+
+                <h3>
+                  {{ answer.question_text }}
+                </h3>
+
+                @if (answer.is_correct) {
+
+                  <span class="result-badge correct">
+                    ✓ Correct
+                  </span>
+
+                } @else {
+
+                  <span class="result-badge incorrect">
+                    ✕ Incorrect
+                  </span>
+
+                }
+
+              </div>
+
+              <div class="selected-answer">
+
+                <span class="answer-label">
+                  Your Answer
+                </span>
+
+                <span class="answer-text">
+                  {{ answer.selected_option_text }}
+                </span>
+
+              </div>
+
+              @if (!answer.is_correct && answer.correct_option_text) {
+
+                <div class="correct-answer-box">
+
+                  <span class="answer-label">
+                    Correct Answer
+                  </span>
+
+                  <span class="answer-text">
+                    {{ answer.correct_option_text }}
+                  </span>
+
+                </div>
+
+              }
+
+            </div>
+
+          </article>
+
+        }
+
+      </div>
+
+    </div>
+
+    <div class="bottom-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="goBack()"
+      >
+        ← Back to History
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="retryQuiz()"
+      >
+        Retry Quiz
+      </button>
+
+    </div>
+
+  }
+
+</div> 

@@ -1,0 +1,225 @@
+<div class="quiz-result-page">
+
+  @if (result) {
+
+    <div class="result-card">
+
+      <div class="result-icon">
+        {{ isPassed ? '🏆' : '📝' }}
+      </div>
+
+      <span class="result-label">
+        {{ isPassed ? 'Assessment Completed' : 'Assessment Result' }}
+      </span>
+
+      <!-- PASS / FAIL STATUS BADGE -->
+      <div
+        class="status-banner"
+        [class.passed]="isPassed"
+        [class.failed]="!isPassed"
+      >
+        <span class="banner-icon">{{ isPassed ? '✓' : '⚠️' }}</span>
+        <span class="banner-text">{{ isPassed ? 'PASSED' : 'FAILED — PASSING SCORE NOT MET' }}</span>
+      </div>
+
+      <h1>
+        {{ result.message }}
+      </h1>
+
+      @if (certificateErrorMessage) {
+        <div class="alert-box error">
+          <span>⚠️</span>
+          <p>{{ certificateErrorMessage }}</p>
+        </div>
+      }
+
+      @if (certificateSuccessMessage) {
+        <div class="alert-box success">
+          <span>✓</span>
+          <p>{{ certificateSuccessMessage }}</p>
+        </div>
+      }
+
+      @if (isPassed) {
+        <p class="result-message">
+          Outstanding work! You scored <strong>{{ percentage }}%</strong>, meeting the required passing score of <strong>{{ passingScore }}%</strong>.
+          @if (courseTitle) {
+            <span> You are eligible for your <em>{{ courseTitle }}</em> certificate once all lessons are completed.</span>
+          }
+        </p>
+      } @else {
+        <p class="result-message">
+          You scored <strong>{{ percentage }}%</strong>. The required passing threshold for this quiz is <strong>{{ passingScore }}%</strong>. Review the course material and try the assessment again!
+        </p>
+      }
+
+      <div class="score-section">
+
+        <div
+          class="score-circle"
+          [style.--score]="percentage + '%'"
+        >
+
+          <div class="score-circle-inner">
+
+            <strong>
+              {{ percentage }}%
+            </strong>
+
+            <span>
+              Score
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="score-details">
+
+          <div class="score-row">
+
+            <div class="score-row-label">
+              <span class="row-icon">✓</span>
+              <span>Correct Answers</span>
+            </div>
+
+            <strong>
+              {{ result.score }}
+            </strong>
+
+          </div>
+
+
+          <div class="score-row">
+
+            <div class="score-row-label">
+              <span class="row-icon">📝</span>
+              <span>Total Questions</span>
+            </div>
+
+            <strong>
+              {{ result.total_questions }}
+            </strong>
+
+          </div>
+
+
+          <div class="score-row">
+
+            <div class="score-row-label">
+              <span class="row-icon">🎯</span>
+              <span>Passing Score Required</span>
+            </div>
+
+            <strong>
+              {{ passingScore }}%
+            </strong>
+
+          </div>
+
+
+          <div class="score-row">
+
+            <div class="score-row-label">
+              <span class="row-icon">{{ isPassed ? '🏆' : '📊' }}</span>
+              <span>Status</span>
+            </div>
+
+            <strong [style.color]="isPassed ? '#16a34a' : '#dc2626'">
+              {{ isPassed ? 'PASSED' : 'NOT PASSED' }}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="result-summary">
+
+        <div class="summary-item">
+          <span class="summary-value">
+            {{ result.score }}
+          </span>
+          <span class="summary-label">
+            Correct
+          </span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-item">
+          <span class="summary-value">
+            {{ result.total_questions - result.score }}
+          </span>
+          <span class="summary-label">
+            Incorrect
+          </span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-item">
+          <span class="summary-value">
+            {{ percentage }}%
+          </span>
+          <span class="summary-label">
+            Your Score
+          </span>
+        </div>
+
+      </div>
+
+
+      <div class="result-actions">
+
+        @if (isPassed) {
+          <button
+            type="button"
+            class="certificate-button"
+            (click)="claimCertificate()"
+            [disabled]="claimingCertificate"
+          >
+            <span>🏆</span>
+            {{ claimingCertificate ? 'Claiming Certificate...' : 'Claim Certificate' }}
+          </button>
+        }
+
+        <button
+          type="button"
+          class="retry-button"
+          (click)="retryQuiz()"
+        >
+          <span>↻</span>
+          {{ isPassed ? 'Retake Quiz' : 'Try Again' }}
+        </button>
+
+        @if (courseId) {
+          <button
+            type="button"
+            class="quizzes-button"
+            (click)="goToCourse()"
+          >
+            Back to Course
+            <span>→</span>
+          </button>
+        }
+
+        <button
+          type="button"
+          class="quizzes-button"
+          (click)="goToQuizzes()"
+        >
+          All Quizzes
+          <span>→</span>
+        </button>
+
+      </div>
+
+    </div>
+
+  }
+
+</div>

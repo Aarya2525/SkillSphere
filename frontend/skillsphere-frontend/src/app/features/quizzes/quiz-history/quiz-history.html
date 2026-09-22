@@ -1,0 +1,151 @@
+<div class="quiz-history-page">
+
+  <div class="page-header">
+    <div>
+      <span class="page-label">Performance</span>
+      <h1>Quiz History</h1>
+      <p>Review your previous quiz attempts and scores.</p>
+    </div>
+
+    <button
+      type="button"
+      class="back-button"
+      (click)="router.navigate(['/quizzes'])"
+    >
+      ← Back to Quizzes
+    </button>
+  </div>
+
+  @if (loading) {
+    <div class="state-card">
+      <p>Loading your quiz history...</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-card">
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        (click)="loadAttempts()"
+      >
+        Try Again
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && attempts.length === 0) {
+    <div class="state-card empty-state">
+      <div class="empty-icon">📝</div>
+      <h2>No quiz attempts yet</h2>
+      <p>Complete a quiz to see your results here.</p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="router.navigate(['/quizzes'])"
+      >
+        Browse Quizzes
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && attempts.length > 0) {
+
+    <div class="history-summary">
+      <div class="summary-card">
+        <span class="summary-icon">📝</span>
+        <div>
+          <strong>{{ attempts.length }}</strong>
+          <span>Total Attempts</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-icon">🏆</span>
+        <div>
+          <strong>{{ attempts[0].score }}/{{ attempts[0].answers.length }}</strong>
+          <span>Latest Score</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-icon">📈</span>
+        <div>
+          <strong>{{ getPercentage(attempts[0]) }}%</strong>
+          <span>Latest Percentage</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-card">
+
+      <div class="history-header">
+        <div>
+          <h2>Previous Attempts</h2>
+          <p>Your quiz performance over time.</p>
+        </div>
+      </div>
+
+      <div class="attempt-list">
+
+        @for (attempt of attempts; track attempt.id) {
+
+          <article class="attempt-row">
+
+            <div class="attempt-number">
+              <span>#{{ attempt.id }}</span>
+            </div>
+
+            <div class="attempt-info">
+              <h3>{{ attempt.quiz_title }}</h3>
+              <span>
+                Submitted {{ formatDate(attempt.submitted_at) }}
+              </span>
+            </div>
+
+            <div class="attempt-score">
+              <strong>
+                {{ attempt.score }}/{{ attempt.total_questions || attempt.answers.length }}
+              </strong>
+
+              <span
+                [class]="getScoreClass(attempt)"
+              >
+                {{ isAttemptPassed(attempt) ? '✓ Passed' : 'Failed' }} ({{ getPercentage(attempt) }}%)
+              </span>
+            </div>
+
+            <div class="attempt-actions">
+
+              <button
+                type="button"
+                class="view-button"
+                (click)="viewAttempt(attempt.id)"
+              >
+                View
+              </button>
+
+              <button
+                type="button"
+                class="retry-button"
+                (click)="retryQuiz(attempt.quiz)"
+              >
+                Retry
+              </button>
+
+            </div>
+
+          </article>
+
+        }
+
+      </div>
+
+    </div>
+
+  }
+
+</div> 

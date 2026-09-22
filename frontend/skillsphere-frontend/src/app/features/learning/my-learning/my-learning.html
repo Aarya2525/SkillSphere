@@ -1,0 +1,168 @@
+<div class="my-learning-page">
+
+  <div class="page-header">
+    <div>
+      <h1>My Learning</h1>
+      <p>Continue your courses and track your learning progress.</p>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="state-card">
+      <p>Loading your learning...</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-card">
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        (click)="loadMyLearning()"
+      >
+        Try Again
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && learningCourses.length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon">📚</div>
+
+      <h2>No courses yet</h2>
+
+      <p>
+        You haven't enrolled in any courses yet.
+        Explore available courses and start learning.
+      </p>
+
+      <button
+        type="button"
+        (click)="viewCourse(1)"
+      >
+        Explore Courses
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && learningCourses.length > 0) {
+
+    <div class="learning-grid">
+
+      @for (course of learningCourses; track course.enrollment.id) {
+
+        <article class="learning-card">
+
+          <div class="course-icon">
+            📚
+          </div>
+
+          <div class="course-content">
+
+            <div class="course-heading">
+              <h2>
+                {{ course.enrollment.course_title }}
+              </h2>
+
+              @if (course.progressPercentage === 100) {
+                @if (course.quiz && course.hasPassedQuiz) {
+                  <span class="completed-badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+                    ✓ Quiz Passed
+                  </span>
+                } @else if (course.quiz && !course.hasPassedQuiz) {
+                  <span class="learning-badge" style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                    📝 Assessment Ready
+                  </span>
+                } @else {
+                  <span class="completed-badge">
+                    Completed
+                  </span>
+                }
+              } @else {
+                <span class="learning-badge">
+                  In Progress
+                </span>
+              }
+            </div>
+
+            <p class="enrolled-date">
+              Enrolled:
+              {{ course.enrollment.enrolled_at | date:'mediumDate' }}
+            </p>
+
+            <div class="progress-section">
+
+              <div class="progress-header">
+                <span>Progress</span>
+
+                <strong>
+                  {{ course.progressPercentage }}%
+                </strong>
+              </div>
+
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  [style.width.%]="course.progressPercentage"
+                ></div>
+              </div>
+
+              <p class="progress-label">
+                {{ getProgressLabel(course) }}
+              </p>
+
+            </div>
+
+            <div class="course-actions">
+
+              @if (course.progressPercentage === 100 && course.quiz && !course.hasPassedQuiz) {
+                <button
+                  type="button"
+                  class="continue-button"
+                  style="background: #4f46e5; border-color: #4f46e5;"
+                  (click)="takeQuiz(course.quiz.id)"
+                >
+                  Take Quiz
+                </button>
+              } @else if (course.progressPercentage === 100 && course.quiz && course.hasPassedQuiz) {
+                <button
+                  type="button"
+                  class="continue-button"
+                  style="background: #10b981; border-color: #10b981;"
+                  (click)="viewCertificates()"
+                >
+                  🏆 View Certificate
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="continue-button"
+                  (click)="continueLearning(course)"
+                >
+                  {{ course.progressPercentage === 100 ? 'Review Course' : 'Continue Learning' }}
+                </button>
+              }
+
+              <button
+                type="button"
+                class="view-button"
+                (click)="viewCourse(course.enrollment.course)"
+              >
+                View Course
+              </button>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      }
+
+    </div>
+
+  }
+
+</div> 

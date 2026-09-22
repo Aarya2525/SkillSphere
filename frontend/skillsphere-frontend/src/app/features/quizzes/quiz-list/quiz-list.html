@@ -1,0 +1,185 @@
+<div class="quizzes-page">
+
+  <div class="page-header">
+
+    <div>
+      <span class="page-label">Learning</span>
+
+      <h1>
+        Quizzes
+      </h1>
+
+      <p>
+        Test your knowledge, measure your progress, and strengthen what you have learned.
+      </p>
+    </div>
+
+  </div>
+
+
+  @if (loading) {
+
+    <div class="state-card">
+
+      <div class="state-icon">
+        📝
+      </div>
+
+      <h2>
+        Loading quizzes...
+      </h2>
+
+      <p>
+        Please wait while we load your available assessments.
+      </p>
+
+    </div>
+
+  }
+
+
+  @if (errorMessage) {
+
+    <div class="error-card">
+
+      <div class="state-icon">
+        ⚠️
+      </div>
+
+      <h2>
+        Something went wrong
+      </h2>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        class="retry-button"
+        (click)="loadQuizzes()"
+      >
+        Try Again
+      </button>
+
+    </div>
+
+  }
+
+
+  @if (!loading && !errorMessage && quizzes.length === 0) {
+
+    <div class="state-card">
+
+      <div class="state-icon">
+        📝
+      </div>
+
+      <h2>
+        No quizzes available
+      </h2>
+
+      <p>
+        There are currently no quizzes available. Check back after completing more course content.
+      </p>
+
+    </div>
+
+  }
+
+
+  @if (!loading && !errorMessage && quizzes.length > 0) {
+
+    <div class="quiz-summary">
+
+      <div class="summary-icon">
+        📚
+      </div>
+
+      <div>
+        <strong>
+          {{ quizzes.length }} available quiz{{
+            quizzes.length === 1 ? '' : 'zes'
+          }}
+        </strong>
+
+        <span>
+          Complete assessments to test your understanding.
+        </span>
+      </div>
+
+    </div>
+
+
+    <div class="quiz-grid">
+
+      @for (quiz of quizzes; track quiz.id) {
+
+        <article class="quiz-card">
+
+          <div class="quiz-card-top">
+
+            <div class="quiz-icon">
+              📝
+            </div>
+
+            <span class="quiz-type">
+              Assessment
+            </span>
+
+          </div>
+
+
+          <div class="quiz-content">
+
+            <h2>
+              {{ quiz.title }}
+            </h2>
+
+            <p class="quiz-description">
+              {{ quiz.description }}
+            </p>
+
+
+            <div class="quiz-info">
+
+              <span>
+                📝 {{ quiz.questions.length }} question{{
+                  quiz.questions.length === 1 ? '' : 's'
+                }}
+              </span>
+
+              <span>
+                🎯 Knowledge Check
+              </span>
+
+            </div>
+
+
+            <button
+              type="button"
+              class="start-button"
+              (click)="startQuiz(quiz.id)"
+            >
+
+              <span>
+                Start Quiz
+              </span>
+
+              <span class="button-arrow">
+                →
+              </span>
+
+            </button>
+
+          </div>
+
+        </article>
+
+      }
+
+    </div>
+
+  }
+
+</div> 

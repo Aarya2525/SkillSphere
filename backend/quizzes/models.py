@@ -10,6 +10,8 @@ class Quiz(models.Model):
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    passing_score = models.PositiveIntegerField(default=70)
+    is_published = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -56,10 +58,13 @@ class QuizAttempt(models.Model):
         related_name="attempts",
     )
     score = models.PositiveIntegerField(default=0)
+    total_questions = models.PositiveIntegerField(default=0)
+    percentage = models.PositiveIntegerField(default=0)
+    is_passed = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.student.username} - {self.quiz.title}"
+        return f"{self.student.username} - {self.quiz.title} ({'Passed' if self.is_passed else 'Failed'})"
 
 
 class Answer(models.Model):

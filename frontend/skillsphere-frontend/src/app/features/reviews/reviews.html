@@ -1,0 +1,577 @@
+<div class="reviews-page">
+
+  @if (loading) {
+
+    <div class="state-card">
+
+      <div class="state-icon">
+        ⭐
+      </div>
+
+      <h2>
+        Loading reviews...
+      </h2>
+
+      <p>
+        Getting your course reviews ready.
+      </p>
+
+    </div>
+
+  }
+
+  @if (!loading && errorMessage && reviews.length === 0) {
+
+    <div class="error-card">
+
+      <div class="state-icon">
+        ⚠️
+      </div>
+
+      <h2>
+        Something went wrong
+      </h2>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="loadData()"
+      >
+        Try Again
+      </button>
+
+    </div>
+
+  }
+
+  @if (!loading) {
+
+    <header class="reviews-header">
+
+      <div>
+
+        <span class="page-label">
+          Course Reviews
+        </span>
+
+        <h1>
+          Reviews & Ratings
+        </h1>
+
+        <p>
+          Share your experience and see what other learners think.
+        </p>
+
+      </div>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="goToCourses()"
+      >
+        Browse Courses
+      </button>
+
+    </header>
+
+
+    @if (successMessage) {
+
+      <div class="success-message">
+        <span>✓</span>
+        {{ successMessage }}
+      </div>
+
+    }
+
+
+    @if (errorMessage && reviews.length > 0) {
+
+      <div class="inline-error">
+        {{ errorMessage }}
+      </div>
+
+    }
+
+
+    <section class="review-stats">
+
+      <article class="review-stat">
+
+        <span class="stat-icon">
+          ⭐
+        </span>
+
+        <div>
+          <strong>
+            {{ getAverageRating() | number:'1.1-1' }}
+          </strong>
+
+          <span>
+            Average Rating
+          </span>
+        </div>
+
+      </article>
+
+
+      <article class="review-stat">
+
+        <span class="stat-icon">
+          💬
+        </span>
+
+        <div>
+          <strong>
+            {{ reviews.length }}
+          </strong>
+
+          <span>
+            Total Reviews
+          </span>
+        </div>
+
+      </article>
+
+
+      <article class="review-stat">
+
+        <span class="stat-icon">
+          📚
+        </span>
+
+        <div>
+          <strong>
+            {{ enrollments.length }}
+          </strong>
+
+          <span>
+            Enrolled Courses
+          </span>
+        </div>
+
+      </article>
+
+    </section>
+
+
+    @if (enrollments.length > 0) {
+
+      <section class="dashboard-card review-course-card">
+
+        <div class="card-header">
+
+          <div>
+
+            <span class="section-label">
+              Your Courses
+            </span>
+
+            <h2>
+              Rate Your Learning Experience
+            </h2>
+
+            <p>
+              Select an enrolled course to leave your review.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="course-options">
+
+          @for (
+            enrollment of enrollments;
+            track enrollment.id
+          ) {
+
+            <article class="course-option">
+
+              <div class="course-option-icon">
+                📘
+              </div>
+
+              <div class="course-option-info">
+
+                <h3>
+                  {{ enrollment.course_title }}
+                </h3>
+
+                <span>
+                  Enrolled {{ formatDate(enrollment.enrolled_at) }}
+                </span>
+
+              </div>
+
+              @if (canReviewCourse(enrollment.course)) {
+
+                <button
+                  type="button"
+                  class="small-button primary-small"
+                  (click)="selectCourse(enrollment.course)"
+                >
+                  Write Review
+                </button>
+
+              } @else {
+
+                <span class="reviewed-badge">
+                  ✓ Reviewed
+                </span>
+
+              }
+
+            </article>
+
+          }
+
+        </div>
+
+      </section>
+
+    }
+
+
+    @if (selectedCourseId) {
+
+      <section class="dashboard-card review-form-card">
+
+        <div class="card-header">
+
+          <div>
+
+            <span class="section-label">
+              New Review
+            </span>
+
+            <h2>
+              Share Your Experience
+            </h2>
+
+            <p>
+              Your feedback helps other learners.
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            class="close-button"
+            (click)="cancelReview()"
+          >
+            ✕
+          </button>
+
+        </div>
+
+
+        <div class="review-form">
+
+          <div class="rating-section">
+
+            <label>
+              Your Rating
+            </label>
+
+            <div class="star-picker">
+
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+
+                <button
+                  type="button"
+                  class="star-button"
+                  [class.selected]="star <= rating"
+                  (click)="setRating(star)"
+                >
+                  {{ star <= rating ? '★' : '☆' }}
+                </button>
+
+              }
+
+            </div>
+
+            <span class="rating-text">
+              {{ rating }} out of 5
+            </span>
+
+          </div>
+
+
+          <div class="form-field">
+
+            <label for="review-comment">
+              Your Comment
+            </label>
+
+            <textarea
+              id="review-comment"
+              rows="5"
+              maxlength="1000"
+              [(ngModel)]="comment"
+              placeholder="Tell us about your learning experience..."
+            ></textarea>
+
+            <span class="character-count">
+              {{ comment.length }}/1000
+            </span>
+
+          </div>
+
+
+          <div class="form-actions">
+
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="cancelReview()"
+              [disabled]="submitting"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="submitReview()"
+              [disabled]="submitting"
+            >
+              @if (submitting) {
+                Submitting...
+              } @else {
+                Submit Review
+              }
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    }
+
+
+    <section class="dashboard-card all-reviews-card">
+
+      <div class="card-header">
+
+        <div>
+
+          <span class="section-label">
+            Community
+          </span>
+
+          <h2>
+            Course Reviews
+          </h2>
+
+          <p>
+            See feedback from SkillSphere learners.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      @if (reviews.length > 0) {
+
+        <div class="reviews-list">
+
+          @for (
+            review of reviews;
+            track review.id
+          ) {
+
+            <article class="review-item">
+
+              @if (editingReviewId === review.id) {
+
+                <div class="edit-review">
+
+                  <div class="edit-header">
+
+                    <strong>
+                      Edit Your Review
+                    </strong>
+
+                    <button
+                      type="button"
+                      class="close-button"
+                      (click)="cancelEdit()"
+                    >
+                      ✕
+                    </button>
+
+                  </div>
+
+
+                  <div class="star-picker">
+
+                    @for (star of [1, 2, 3, 4, 5]; track star) {
+
+                      <button
+                        type="button"
+                        class="star-button"
+                        [class.selected]="star <= editRating"
+                        (click)="setEditRating(star)"
+                      >
+                        {{ star <= editRating ? '★' : '☆' }}
+                      </button>
+
+                    }
+
+                  </div>
+
+
+                  <textarea
+                    rows="4"
+                    maxlength="1000"
+                    [(ngModel)]="editComment"
+                  ></textarea>
+
+
+                  <div class="form-actions">
+
+                    <button
+                      type="button"
+                      class="secondary-button"
+                      (click)="cancelEdit()"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      class="primary-button"
+                      (click)="saveEdit(review)"
+                    >
+                      Save Changes
+                    </button>
+
+                  </div>
+
+                </div>
+
+              } @else {
+
+                <div class="review-avatar">
+                  {{ review.student_name.charAt(0).toUpperCase() }}
+                </div>
+
+                <div class="review-content">
+
+                  <div class="review-top">
+
+                    <div>
+
+                      <h3>
+                        {{ review.student_name }}
+                      </h3>
+
+                      <span class="review-course">
+                        {{ review.course_title }}
+                      </span>
+
+                    </div>
+
+                    <span class="review-date">
+                      {{ formatDate(review.created_at) }}
+                    </span>
+
+                  </div>
+
+
+                  <div class="review-rating">
+
+                    <span class="stars">
+                      {{ getStars(review.rating) }}
+                    </span>
+
+                    <span>
+                      {{ review.rating }}/5
+                    </span>
+
+                  </div>
+
+
+                  <p class="review-comment">
+                    {{ review.comment }}
+                  </p>
+
+
+                  @if (review.student === 1) {
+
+                    <div class="review-actions">
+
+                      <button
+                        type="button"
+                        (click)="startEdit(review)"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="deleteReview(review)"
+                      >
+                        Delete
+                      </button>
+
+                    </div>
+
+                  }
+
+                </div>
+
+              }
+
+            </article>
+
+          }
+
+        </div>
+
+      } @else {
+
+        <div class="empty-section">
+
+          <div class="empty-icon">
+            ⭐
+          </div>
+
+          <h3>
+            No reviews yet
+          </h3>
+
+          <p>
+            Be the first learner to share your experience.
+          </p>
+
+          @if (enrollments.length === 0) {
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="goToCourses()"
+            >
+              Browse Courses
+            </button>
+
+          }
+
+        </div>
+
+      }
+
+    </section>
+
+  }
+
+</div> 

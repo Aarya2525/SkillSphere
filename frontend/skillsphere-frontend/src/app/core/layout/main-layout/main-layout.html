@@ -1,0 +1,219 @@
+<div class="app-shell">
+
+  <aside class="sidebar">
+
+    <div class="sidebar-header">
+
+      <div class="logo">
+        S
+      </div>
+
+      <div class="brand-text">
+        <h1>SkillSphere</h1>
+        <span>Learning Platform</span>
+      </div>
+
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+      @if (isStudent) {
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+
+        <a
+          routerLink="/courses"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📚</span>
+          <span>Courses</span>
+        </a>
+
+        <a
+          routerLink="/learning"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">🎓</span>
+          <span>My Learning</span>
+        </a>
+
+        <a
+          routerLink="/quizzes"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📝</span>
+          <span>Quizzes</span>
+        </a>
+
+        <a
+          routerLink="/quizzes/history"
+          routerLinkActive="active"
+        >
+          <span class="nav-icon">📈</span>
+          <span>Quiz History</span>
+        </a>
+
+        <a
+          routerLink="/certificates"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">🏆</span>
+          <span>Certificates</span>
+        </a>
+
+        <a
+          routerLink="/reviews"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">⭐</span>
+          <span>Reviews</span>
+        </a>
+      }
+
+      @if (isInstructor) {
+        <a
+          routerLink="/instructor/dashboard"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+
+        <a
+          routerLink="/instructor/courses"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📚</span>
+          <span>My Courses</span>
+        </a>
+
+        <a
+          routerLink="/instructor/courses/create"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">➕</span>
+          <span>Create Course</span>
+        </a>
+      }
+
+      @if (isAdmin) {
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+
+        <a
+          routerLink="/courses"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📚</span>
+          <span>Courses</span>
+        </a>
+
+        <a
+          routerLink="/quizzes"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">📝</span>
+          <span>Quizzes</span>
+        </a>
+
+        <a
+          routerLink="/certificates"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">🏆</span>
+          <span>Certificates</span>
+        </a>
+
+        <a
+          routerLink="/reviews"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">⭐</span>
+          <span>Reviews</span>
+        </a>
+      }
+
+      <a
+        routerLink="/notifications"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="notification-nav-link"
+      >
+        <span class="nav-icon">🔔</span>
+
+        <span class="notification-nav-text">
+          Notifications
+        </span>
+
+        @if (unreadNotificationCount > 0) {
+          <span class="notification-badge">
+            {{ unreadNotificationCount }}
+          </span>
+        }
+      </a>
+
+    </nav>
+
+
+    <div class="sidebar-footer">
+
+      <button
+        type="button"
+        class="logout-button"
+        (click)="logout()"
+      >
+        <span class="nav-icon">🚪</span>
+        <span>Logout</span>
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <main class="main-content">
+
+    <header class="topbar">
+
+      <div>
+        <h2>SkillSphere</h2>
+        <p>Learn. Practice. Grow.</p>
+      </div>
+
+    </header>
+
+
+    <div class="content-area">
+
+      <router-outlet></router-outlet>
+
+    </div>
+
+  </main>
+
+</div> 

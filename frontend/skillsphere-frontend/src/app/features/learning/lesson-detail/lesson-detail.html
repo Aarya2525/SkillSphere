@@ -1,0 +1,123 @@
+ <div class="lesson-detail-page">
+
+  @if (loading) {
+
+    <div class="state-card">
+      <p>Loading lesson...</p>
+    </div>
+
+  }
+
+  @if (errorMessage) {
+
+    <div class="error-card">
+
+      <h2>Something went wrong</h2>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        (click)="goBack()"
+      >
+        Back
+      </button>
+
+    </div>
+
+  }
+
+  @if (!loading && !errorMessage && lesson) {
+
+    <button
+      type="button"
+      class="back-button"
+      (click)="goBack()"
+    >
+      ← Back to Course
+    </button>
+
+    <article class="lesson-card">
+
+      <div class="lesson-header">
+
+        <div class="lesson-icon">
+          📖
+        </div>
+
+        <div>
+
+          <span class="lesson-label">
+            Lesson {{ lesson.order }}
+          </span>
+
+          <h1>
+            {{ lesson.title }}
+          </h1>
+
+        </div>
+
+      </div>
+
+      <div class="lesson-content">
+
+        <h2>Lesson Content</h2>
+
+        <p>
+          {{ lesson.content }}
+        </p>
+
+      </div>
+
+      @if (successMessage) {
+
+        <div class="success-message">
+          ✓ {{ successMessage }}
+        </div>
+
+      }
+
+      @if (errorMessage) {
+
+        <div class="inline-error">
+          {{ errorMessage }}
+        </div>
+
+      }
+
+      <div class="lesson-actions">
+
+        @if (progress?.is_completed) {
+
+          <div class="completed-status">
+            ✓ Lesson Completed
+          </div>
+
+        } @else {
+
+          <button
+            type="button"
+            class="complete-button"
+            [disabled]="completing"
+            (click)="markAsComplete()"
+          >
+
+            @if (completing) {
+              Completing...
+            } @else {
+              ✓ Mark as Complete
+            }
+
+          </button>
+
+        }
+
+      </div>
+
+    </article>
+
+  }
+
+</div> 

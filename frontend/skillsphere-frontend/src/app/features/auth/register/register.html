@@ -1,0 +1,115 @@
+<div class="register-page">
+
+  <div class="register-card">
+
+    <div class="register-header">
+      <h1>SkillSphere</h1>
+      <p>Create your account</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+
+      <div class="form-group">
+        <label for="username">Username</label>
+
+        <input
+          id="username"
+          type="text"
+          name="username"
+          [(ngModel)]="username"
+          placeholder="Enter your username"
+          autocomplete="username"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+
+        <input
+          id="email"
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          placeholder="Enter your email"
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Enter your password"
+          autocomplete="new-password"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+
+        <input
+          id="confirmPassword"
+          type="password"
+          name="confirmPassword"
+          [(ngModel)]="confirmPassword"
+          placeholder="Confirm your password"
+          autocomplete="new-password"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="role">Account Type</label>
+
+        <select
+          id="role"
+          name="role"
+          [(ngModel)]="role"
+        >
+          <option value="STUDENT">Student</option>
+          <option value="INSTRUCTOR">Instructor</option>
+        </select>
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
+      @if (successMessage) {
+        <div class="success-message">
+          {{ successMessage }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        [disabled]="loading"
+      >
+        @if (loading) {
+          Creating Account...
+        } @else {
+          Create Account
+        }
+      </button>
+
+    </form>
+
+    <div class="login-link">
+      <span>Already have an account?</span>
+
+      <button
+        type="button"
+        (click)="goToLogin()"
+      >
+        Sign In
+      </button>
+    </div>
+
+  </div>
+
+</div> 

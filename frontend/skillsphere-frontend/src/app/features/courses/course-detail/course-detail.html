@@ -1,0 +1,390 @@
+<div class="course-detail-page">
+
+  @if (loading) {
+
+    <div class="state-card">
+      <p>Loading course...</p>
+    </div>
+
+  }
+
+
+  @if (errorMessage && !course) {
+
+    <div class="error-card">
+
+      <h2>Something went wrong</h2>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        (click)="goBack()"
+      >
+        Back to Courses
+      </button>
+
+    </div>
+
+  }
+
+
+  @if (!loading && course) {
+
+    <button
+      type="button"
+      class="back-button"
+      (click)="goBack()"
+    >
+      ← Back to Courses
+    </button>
+
+
+    <section class="course-header">
+
+      <div class="course-icon">
+        📚
+      </div>
+
+      <div class="course-header-content">
+
+        <h1>
+          {{ course.title }}
+        </h1>
+
+        <p>
+          {{ course.description }}
+        </p>
+
+        <div class="course-details">
+
+          <span>
+            👨‍🏫 {{ course.instructor_name }}
+          </span>
+
+          <span class="published-badge">
+            {{
+              course.is_published
+                ? 'Published'
+                : 'Draft'
+            }}
+          </span>
+
+        </div>
+
+
+        <div class="enrollment-actions">
+
+          @if (successMessage) {
+
+            <div class="success-message">
+              ✓ {{ successMessage }}
+            </div>
+
+          }
+
+
+          @if (errorMessage) {
+
+            <div class="inline-error">
+              {{ errorMessage }}
+            </div>
+
+          }
+
+
+          @if (!isEnrolled) {
+
+            <button
+              type="button"
+              class="enroll-button"
+              [disabled]="enrolling || !course.is_published"
+              (click)="enroll()"
+            >
+
+              @if (enrolling) {
+                Enrolling...
+              } @else {
+                Enroll Now
+              }
+
+            </button>
+
+          } @else {
+
+            <div class="enrolled-status">
+              ✓ Enrolled
+            </div>
+
+            <button
+              type="button"
+              class="continue-button"
+              (click)="goToLearning()"
+            >
+              Continue Learning
+            </button>
+
+          }
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section class="course-content">
+
+      <h2>About This Course</h2>
+
+      <p>
+        {{ course.description }}
+      </p>
+
+    </section>
+
+
+    <section class="modules-section">
+
+      <div class="section-header">
+
+        <h2>Course Content</h2>
+
+        <span>
+          {{ modules.length }} Module{{
+            modules.length === 1 ? '' : 's'
+          }}
+        </span>
+
+      </div>
+
+
+      @if (modules.length === 0) {
+
+        <div class="state-card">
+
+          <p>
+            No modules available for this course yet.
+          </p>
+
+        </div>
+
+      }
+
+
+      @for (
+        module of modules;
+        track module.id
+      ) {
+
+        <div class="module-card">
+
+          <div class="module-header">
+
+            <div class="module-number">
+              {{ module.order }}
+            </div>
+
+            <div class="module-title">
+
+              <h3>
+                {{ module.title }}
+              </h3>
+
+              <span>
+                {{ getLessonsForModule(module.id).length }}
+                lesson{{
+                  getLessonsForModule(module.id).length === 1
+                    ? ''
+                    : 's'
+                }}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="lessons-list">
+
+            @for (
+              lesson of getLessonsForModule(module.id);
+              track lesson.id
+            ) {
+
+              <div class="lesson-item">
+
+                <div class="lesson-icon">
+                  📖
+                </div>
+
+
+                <div class="lesson-info">
+
+                  <h4>
+                    {{ lesson.title }}
+                  </h4>
+
+                  <p>
+                    Lesson {{ lesson.order }}
+                  </p>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  class="lesson-button"
+                  [disabled]="!isEnrolled"
+                  (click)="startLesson(lesson.id)"
+                >
+
+                  @if (isEnrolled) {
+                    Start
+                  } @else {
+                    Enroll First
+                  }
+
+                </button>
+
+              </div>
+
+            }
+
+          </div>
+
+        </div>
+
+      }
+
+    </section>
+
+
+    <!-- ==================================================
+         COURSE ASSESSMENT / QUIZ
+         ================================================== -->
+
+    @if (quiz) {
+
+      <section class="modules-section" style="margin-top: 28px;">
+
+        <div class="section-header">
+
+          <h2>Course Assessment</h2>
+
+          <span
+            class="published-badge"
+            [style.background]="hasPassedQuiz ? '#dcfce7' : '#eef2ff'"
+            [style.color]="hasPassedQuiz ? '#15803d' : '#4338ca'"
+            [style.border]="hasPassedQuiz ? '1px solid #86efac' : '1px solid #c7d2fe'"
+          >
+            {{ hasPassedQuiz ? '✓ Assessment Passed' : 'Required for Certificate' }}
+          </span>
+
+        </div>
+
+        <div class="module-card">
+
+          <div class="module-header">
+
+            <div class="module-number">
+              📝
+            </div>
+
+            <div class="module-title">
+
+              <h3>
+                {{ quiz.title }}
+              </h3>
+
+              <span>
+                🎯 Passing Score: {{ quiz.passing_score }}%
+              </span>
+
+            </div>
+
+          </div>
+
+          <div style="padding: 20px; color: #475569; font-size: 14px;">
+
+            <p style="margin: 0 0 14px; line-height: 1.6;">
+              {{ quiz.description || 'Test your understanding of the course content. Passing this assessment unlocks your official course completion certificate.' }}
+            </p>
+
+            @if (hasPassedQuiz) {
+
+              <div style="padding: 12px 16px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; color: #166534; font-weight: 600; margin-bottom: 16px;">
+                ✓ Congratulations! You have successfully passed this quiz.
+                @if (latestAttempt) {
+                  <span> (Score: {{ latestAttempt.score }}/{{ latestAttempt.total_questions }} - {{ latestAttempt.percentage }}%)</span>
+                }
+              </div>
+
+            } @else if (latestAttempt) {
+
+              <div style="padding: 12px 16px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; color: #9a3412; font-weight: 600; margin-bottom: 16px;">
+                ⚠️ Previous Attempt: {{ latestAttempt.score }}/{{ latestAttempt.total_questions }} ({{ latestAttempt.percentage }}%) — Required passing score is {{ quiz.passing_score }}%. You may retake the quiz anytime.
+              </div>
+
+            }
+
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+
+              @if (!isEnrolled) {
+
+                <button
+                  type="button"
+                  class="enroll-button"
+                  (click)="enroll()"
+                  [disabled]="enrolling || !course.is_published"
+                >
+                  Enroll to Take Quiz
+                </button>
+
+              } @else {
+
+                <button
+                  type="button"
+                  class="continue-button"
+                  (click)="takeQuiz()"
+                >
+                  {{ hasPassedQuiz ? 'Retake Quiz' : (latestAttempt ? 'Retake Quiz' : 'Start Quiz') }}
+                </button>
+
+                @if (hasPassedQuiz && allLessonsCompleted) {
+
+                  <button
+                    type="button"
+                    class="continue-button"
+                    style="background: #10b981; border-color: #10b981;"
+                    (click)="claimCertificate()"
+                    [disabled]="claimingCertificate"
+                  >
+                    {{ claimingCertificate ? 'Claiming Certificate...' : '🏆 Claim Certificate' }}
+                  </button>
+
+                } @else if (hasPassedQuiz && !allLessonsCompleted) {
+
+                  <span style="font-size: 13px; color: #64748b;">
+                    Complete remaining lessons ({{ completedLessons }}/{{ lessons.length }}) to claim certificate.
+                  </span>
+
+                }
+
+              }
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    }
+
+  }
+
+</div> 

@@ -1,0 +1,272 @@
+<div class="instructor-dashboard">
+
+  <header class="dashboard-header">
+
+    <div>
+      <span class="page-label">Instructor</span>
+
+      <h1>Instructor Dashboard</h1>
+
+      <p>
+        Manage your courses, content, and teaching activity.
+      </p>
+    </div>
+
+  </header>
+
+
+  @if (loading) {
+
+    <section class="state-card">
+
+      <div class="state-icon">📚</div>
+
+      <h2>Loading your courses...</h2>
+
+      <p>
+        Getting your instructor information and courses.
+      </p>
+
+    </section>
+
+  }
+
+
+  @if (errorMessage) {
+
+    <section class="error-card">
+
+      <div class="state-icon">⚠️</div>
+
+      <h2>Something went wrong</h2>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="loadCourses()"
+      >
+        Try Again
+      </button>
+
+    </section>
+
+  }
+
+
+  @if (!loading && !errorMessage) {
+
+    <section class="stats-grid">
+
+      <article class="stat-card">
+
+        <div class="stat-icon">
+          📚
+        </div>
+
+        <div>
+
+          <span>Total Courses</span>
+
+          <strong>
+            {{ courses.length }}
+          </strong>
+
+        </div>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <div class="stat-icon">
+          🌐
+        </div>
+
+        <div>
+
+          <span>Published</span>
+
+          <strong>
+            {{ publishedCourseCount }}
+          </strong>
+
+        </div>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <div class="stat-icon">
+          📝
+        </div>
+
+        <div>
+
+          <span>Drafts</span>
+
+          <strong>
+            {{ draftCourseCount }}
+          </strong>
+
+        </div>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <div class="stat-icon">
+          👨‍🎓
+        </div>
+
+        <div>
+
+          <span>Teaching</span>
+
+          <strong>
+            {{ courses.length > 0 ? 'Active' : '—' }}
+          </strong>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <section class="courses-section">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="section-label">
+            Course Management
+          </span>
+
+          <h2>My Courses</h2>
+
+          <p>
+            Create, manage, and publish your learning content.
+          </p>
+
+        </div>
+
+
+        <a
+          routerLink="/instructor/courses/create"
+          class="primary-button"
+        >
+          + Create Course
+        </a>
+
+      </div>
+
+
+      @if (courses.length > 0) {
+
+        <div class="course-grid">
+
+          @for (
+            course of courses;
+            track course.id
+          ) {
+
+            <article class="course-card">
+
+              <div class="course-card-header">
+
+                <span
+                  class="status-badge"
+                  [class.published]="course.is_published"
+                  [class.draft]="!course.is_published"
+                >
+                  @if (course.is_published) {
+                    Published
+                  } @else {
+                    Draft
+                  }
+                </span>
+
+                <span class="course-id">
+                  #{{ course.id }}
+                </span>
+
+              </div>
+
+
+              <div class="course-card-body">
+
+                <h3>
+                  {{ course.title }}
+                </h3>
+
+                <p>
+                  {{ course.description }}
+                </p>
+
+              </div>
+
+
+              <div class="course-card-footer">
+
+                <span>
+                  Instructor:
+                  {{ course.instructor_name }}
+                </span>
+
+
+                <a
+                  [routerLink]="[
+                    '/instructor/courses',
+                    course.id
+                  ]"
+                  class="secondary-button"
+                >
+                  Manage Course
+                </a>
+
+              </div>
+
+            </article>
+
+          }
+
+        </div>
+
+      } @else {
+
+        <section class="empty-card">
+
+          <div class="empty-icon">
+            📚
+          </div>
+
+          <h2>No courses yet</h2>
+
+          <p>
+            Create your first course and start building
+            your learning content.
+          </p>
+
+          <a
+            routerLink="/instructor/courses/create"
+            class="primary-button"
+          >
+            + Create Your First Course
+          </a>
+
+        </section>
+
+      }
+
+    </section>
+
+  }
+
+</div> 

@@ -1,0 +1,173 @@
+<div class="quiz-attempt-page">
+
+  @if (loading) {
+    <div class="state-card">
+      <p>Loading quiz...</p>
+    </div>
+  }
+
+  @if (errorMessage && !quiz) {
+    <div class="error-card">
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        (click)="goBack()"
+      >
+        Back to Quizzes
+      </button>
+    </div>
+  }
+
+  @if (!loading && quiz) {
+
+    <div class="page-header">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        ← Back to Quizzes
+      </button>
+
+      <div class="quiz-heading">
+        <div>
+          <span class="quiz-label">Quiz</span>
+
+          <h1>
+            {{ quiz.title }}
+          </h1>
+
+          <p>
+            {{ quiz.description }}
+          </p>
+        </div>
+
+        <div class="quiz-progress">
+          <strong>
+            {{ answeredCount }}/{{ totalQuestions }}
+          </strong>
+
+          <span>
+            Questions answered
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    @if (errorMessage) {
+      <div class="inline-error">
+        {{ errorMessage }}
+      </div>
+    }
+
+    <div class="questions-container">
+
+      @for (
+        question of quiz.questions;
+        track question.id;
+        let questionNumber = $index
+      ) {
+
+        <article class="question-card">
+
+          <div class="question-header">
+
+            <span class="question-number">
+              Question {{ questionNumber + 1 }}
+            </span>
+
+            <span class="question-count">
+              {{ questionNumber + 1 }}/{{ totalQuestions }}
+            </span>
+
+          </div>
+
+          <h2>
+            {{ question.text }}
+          </h2>
+
+          <div class="options">
+
+            @for (
+              option of question.options;
+              track option.id
+            ) {
+
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="
+                  isSelected(question.id, option.id)
+                "
+                (click)="
+                  selectAnswer(question.id, option.id)
+                "
+              >
+
+                <span class="option-indicator">
+                  @if (
+                    isSelected(
+                      question.id,
+                      option.id
+                    )
+                  ) {
+                    ✓
+                  } @else {
+                    {{ $index + 1 }}
+                  }
+                </span>
+
+                <span class="option-text">
+                  {{ option.text }}
+                </span>
+
+              </button>
+
+            }
+
+          </div>
+
+        </article>
+
+      }
+
+    </div>
+
+    <div class="submit-section">
+
+      <div>
+        <strong>
+          {{ answeredCount }} of {{ totalQuestions }}
+          answered
+        </strong>
+
+        <p>
+          Answer all questions before submitting.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="submit-button"
+        [disabled]="
+          submitting ||
+          answeredCount !== totalQuestions
+        "
+        (click)="submitQuiz()"
+      >
+        @if (submitting) {
+          Submitting...
+        } @else {
+          Submit Quiz
+        }
+      </button>
+
+    </div>
+
+  }
+
+</div> 

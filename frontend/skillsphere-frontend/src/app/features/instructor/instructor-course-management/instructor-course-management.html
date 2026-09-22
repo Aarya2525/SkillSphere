@@ -1,0 +1,1213 @@
+<div class="course-management-page">
+
+  <!-- ==================================================
+       PAGE HEADER
+       ================================================== -->
+
+  <header class="page-header">
+
+    <div class="page-heading">
+
+      <span class="page-label">
+        COURSE MANAGEMENT
+      </span>
+
+      <h1>
+        {{ courseId ? 'Manage Course' : 'Create Course' }}
+      </h1>
+
+      <p>
+        {{
+          courseId
+            ? 'Manage your course information, modules, and lessons.'
+            : 'Create a new course and build its learning content.'
+        }}
+      </p>
+
+    </div>
+
+  </header>
+
+
+  <!-- ==================================================
+       ALERTS
+       ================================================== -->
+
+  @if (errorMessage) {
+
+    <div class="alert-card error-card">
+
+      <div class="alert-icon">
+        ⚠️
+      </div>
+
+      <div class="alert-content">
+
+        <h2>
+          Something went wrong
+        </h2>
+
+        <p>
+          {{ errorMessage }}
+        </p>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  @if (successMessage) {
+
+    <div class="alert-card success-card">
+
+      <div class="alert-icon">
+        ✓
+      </div>
+
+      <div class="alert-content">
+
+        <h2>
+          Success
+        </h2>
+
+        <p>
+          {{ successMessage }}
+        </p>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ==================================================
+       COURSE INFORMATION
+       ================================================== -->
+
+  <section class="management-card">
+
+    <div class="card-header">
+
+      <div>
+
+        <span class="section-label">
+          COURSE DETAILS
+        </span>
+
+        <h2>
+          {{ courseId ? 'Course Information' : 'New Course' }}
+        </h2>
+
+        <p>
+          Add or update the basic information for your course.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    @if (loading && !course && courseId !== null) {
+
+      <div class="loading-state">
+
+        <div class="loading-spinner"></div>
+
+        <p>
+          Loading course...
+        </p>
+
+      </div>
+
+    } @else {
+
+      <form
+        class="course-form"
+        (ngSubmit)="onSubmit()"
+      >
+
+        <div class="form-group">
+
+          <label for="course-title">
+            Course Title
+          </label>
+
+          <input
+            id="course-title"
+            type="text"
+            name="courseTitle"
+            [(ngModel)]="title"
+            placeholder="Enter course title"
+            maxlength="200"
+            [disabled]="loading"
+          />
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="course-description">
+            Course Description
+          </label>
+
+          <textarea
+            id="course-description"
+            name="courseDescription"
+            [(ngModel)]="description"
+            placeholder="Describe what students will learn in this course"
+            rows="6"
+            [disabled]="loading"
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-actions">
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancel()"
+            [disabled]="loading"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="loading"
+          >
+            @if (loading) {
+              Saving...
+            } @else {
+              {{ courseId ? 'Save Changes' : 'Create Course' }}
+            }
+          </button>
+
+        </div>
+
+      </form>
+
+    }
+
+  </section>
+
+
+  <!-- ==================================================
+       COURSE CONTENT
+       ================================================== -->
+
+  @if (courseId !== null) {
+
+    <section class="content-management-card">
+
+      <div class="content-header">
+
+        <div>
+
+          <span class="section-label">
+            COURSE CONTENT
+          </span>
+
+          <h2>
+            Modules & Lessons
+          </h2>
+
+          <p>
+            Build the learning structure of your course.
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="primary-button"
+          (click)="openCreateModule()"
+        >
+          + Add Module
+        </button>
+
+      </div>
+
+
+      <!-- ==================================================
+           CONTENT LOADING
+           ================================================== -->
+
+      @if (contentLoading) {
+
+        <div class="content-loading">
+
+          <div class="loading-spinner"></div>
+
+          <p>
+            Loading course content...
+          </p>
+
+        </div>
+
+      }
+
+
+      <!-- ==================================================
+           MODULE FORM
+           ================================================== -->
+
+      @if (showModuleForm) {
+
+        <div class="inline-form-card">
+
+          <div class="inline-form-header">
+
+            <div>
+
+              <span class="section-label">
+                {{
+                  editingModuleId !== null
+                    ? 'EDIT MODULE'
+                    : 'NEW MODULE'
+                }}
+              </span>
+
+              <h3>
+                {{
+                  editingModuleId !== null
+                    ? 'Edit Module'
+                    : 'Add Module'
+                }}
+              </h3>
+
+            </div>
+
+
+            <button
+              type="button"
+              class="close-button"
+              (click)="cancelModuleForm()"
+              aria-label="Close module form"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="module-title">
+              Module Title
+            </label>
+
+            <input
+              id="module-title"
+              type="text"
+              name="moduleTitle"
+              [(ngModel)]="moduleTitle"
+              placeholder="Example: Cloud Computing Fundamentals"
+              maxlength="200"
+            />
+
+          </div>
+
+
+          <div class="inline-form-actions">
+
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="cancelModuleForm()"
+              [disabled]="savingModule"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="saveModule()"
+              [disabled]="savingModule"
+            >
+              @if (savingModule) {
+                Saving...
+              } @else {
+                {{
+                  editingModuleId !== null
+                    ? 'Update Module'
+                    : 'Create Module'
+                }}
+              }
+            </button>
+
+          </div>
+
+        </div>
+
+      }
+
+
+      <!-- ==================================================
+           EMPTY MODULE STATE
+           ================================================== -->
+
+      @if (
+        !contentLoading &&
+        sortedModules.length === 0 &&
+        !showModuleForm
+      ) {
+
+        <div class="empty-content-card">
+
+          <div class="empty-icon">
+            📚
+          </div>
+
+          <h3>
+            No modules yet
+          </h3>
+
+          <p>
+            Start building your course by adding your first module.
+          </p>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="openCreateModule()"
+          >
+            + Add First Module
+          </button>
+
+        </div>
+
+      }
+
+
+      <!-- ==================================================
+           MODULES
+           ================================================== -->
+
+      @if (
+        !contentLoading &&
+        sortedModules.length > 0
+      ) {
+
+        <div class="modules-list">
+
+          @for (
+            module of sortedModules;
+            track module.id
+          ) {
+
+            <article class="module-card">
+
+              <!-- MODULE HEADER -->
+
+              <div class="module-header">
+
+                <div class="module-number">
+                  {{ module.order }}
+                </div>
+
+
+                <div class="module-main">
+
+                  <div class="module-title-row">
+
+                    <div>
+
+                      <span class="module-label">
+                        MODULE {{ module.order }}
+                      </span>
+
+                      <h3>
+                        {{ module.title }}
+                      </h3>
+
+                    </div>
+
+
+                    <div class="module-actions">
+
+                      <button
+                        type="button"
+                        class="secondary-button small-button"
+                        (click)="openEditModule(module)"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        class="danger-button small-button"
+                        (click)="deleteModule(module)"
+                        [disabled]="deletingModuleId === module.id"
+                      >
+                        @if (
+                          deletingModuleId === module.id
+                        ) {
+                          Deleting...
+                        } @else {
+                          Delete
+                        }
+                      </button>
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="module-meta">
+
+                    <span>
+                      {{
+                        getLessonsForModule(module.id).length
+                      }}
+                      {{
+                        getLessonsForModule(module.id).length === 1
+                          ? 'lesson'
+                          : 'lessons'
+                      }}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <!-- ==================================================
+                   LESSONS
+                   ================================================== -->
+
+              <div class="lessons-section">
+
+                <div class="lessons-header">
+
+                  <div>
+
+                    <h4>
+                      Lessons
+                    </h4>
+
+                    <p>
+                      Add learning content to this module.
+                    </p>
+
+                  </div>
+
+
+                  <button
+                    type="button"
+                    class="secondary-button"
+                    (click)="openCreateLesson(module.id)"
+                  >
+                    + Add Lesson
+                  </button>
+
+                </div>
+
+
+                <!-- EMPTY LESSONS -->
+
+                @if (
+                  getLessonsForModule(module.id).length === 0
+                ) {
+
+                  <div class="empty-lessons">
+
+                    <div class="empty-lesson-icon">
+                      📖
+                    </div>
+
+                    <p>
+                      No lessons in this module yet.
+                    </p>
+
+                    <button
+                      type="button"
+                      class="text-button"
+                      (click)="openCreateLesson(module.id)"
+                    >
+                      Add the first lesson
+                    </button>
+
+                  </div>
+
+                }
+
+
+                <!-- LESSON LIST -->
+
+                @if (
+                  getLessonsForModule(module.id).length > 0
+                ) {
+
+                  @for (
+                    lesson of getLessonsForModule(module.id);
+                    track lesson.id
+                  ) {
+
+                    <article class="lesson-card">
+
+                      <div class="lesson-icon">
+                        📖
+                      </div>
+
+
+                      <div class="lesson-content">
+
+                        <div class="lesson-heading">
+
+                          <span class="lesson-number">
+                            Lesson {{ lesson.order }}
+                          </span>
+
+                          <h5>
+                            {{ lesson.title }}
+                          </h5>
+
+                        </div>
+
+
+                        <p>
+                          {{ lesson.content }}
+                        </p>
+
+                      </div>
+
+
+                      <div class="lesson-actions">
+
+                        <button
+                          type="button"
+                          class="secondary-button small-button"
+                          (click)="openEditLesson(lesson)"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          class="danger-button small-button"
+                          (click)="deleteLesson(lesson)"
+                          [disabled]="deletingLessonId === lesson.id"
+                        >
+                          @if (
+                            deletingLessonId === lesson.id
+                          ) {
+                            Deleting...
+                          } @else {
+                            Delete
+                          }
+                        </button>
+
+                      </div>
+
+                    </article>
+
+                  }
+
+                }
+
+
+                <!-- ==================================================
+                     LESSON FORM
+                     ================================================== -->
+
+                @if (
+                  showLessonForm &&
+                  selectedModuleId === module.id
+                ) {
+
+                  <div class="inline-form-card lesson-form-card">
+
+                    <div class="inline-form-header">
+
+                      <div>
+
+                        <span class="section-label">
+                          {{
+                            editingLessonId !== null
+                              ? 'EDIT LESSON'
+                              : 'NEW LESSON'
+                          }}
+                        </span>
+
+                        <h3>
+                          {{
+                            editingLessonId !== null
+                              ? 'Edit Lesson'
+                              : 'Add Lesson'
+                          }}
+                        </h3>
+
+                      </div>
+
+
+                      <button
+                        type="button"
+                        class="close-button"
+                        (click)="cancelLessonForm()"
+                        aria-label="Close lesson form"
+                      >
+                        ×
+                      </button>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                      <label
+                        for="lesson-title-{{ module.id }}"
+                      >
+                        Lesson Title
+                      </label>
+
+                      <input
+                        id="lesson-title-{{ module.id }}"
+                        type="text"
+                        name="lessonTitle{{ module.id }}"
+                        [(ngModel)]="lessonTitle"
+                        placeholder="Example: Introduction to Cloud Computing"
+                        maxlength="200"
+                      />
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                      <label
+                        for="lesson-content-{{ module.id }}"
+                      >
+                        Lesson Content
+                      </label>
+
+                      <textarea
+                        id="lesson-content-{{ module.id }}"
+                        name="lessonContent{{ module.id }}"
+                        [(ngModel)]="lessonContent"
+                        placeholder="Write the lesson content students will read..."
+                        rows="8"
+                      ></textarea>
+
+                    </div>
+
+
+                    <div class="inline-form-actions">
+
+                      <button
+                        type="button"
+                        class="secondary-button"
+                        (click)="cancelLessonForm()"
+                        [disabled]="savingLesson"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        class="primary-button"
+                        (click)="saveLesson()"
+                        [disabled]="savingLesson"
+                      >
+                        @if (savingLesson) {
+                          Saving...
+                        } @else {
+                          {{
+                            editingLessonId !== null
+                              ? 'Update Lesson'
+                              : 'Create Lesson'
+                          }}
+                        }
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                }
+
+              </div>
+
+            </article>
+
+          }
+
+        </div>
+
+      }
+
+    </section>
+
+
+    <!-- ==================================================
+         COURSE ASSESSMENT / QUIZ
+         ================================================== -->
+
+    <section class="management-card quiz-section">
+
+      <div class="card-header">
+
+        <div>
+          <span class="section-label">COURSE ASSESSMENT</span>
+          <h2>Quiz & Certification Assessment</h2>
+          <p>
+            Configure the quiz students must pass to complete this course and earn their certificate.
+          </p>
+        </div>
+
+        <div>
+          @if (!courseQuiz) {
+            <button
+              type="button"
+              class="primary-button"
+              (click)="openCreateQuiz()"
+              [disabled]="loading || quizLoading"
+            >
+              + Create Assessment Quiz
+            </button>
+          } @else {
+            <div class="button-group">
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="openEditQuiz()"
+              >
+                Edit Quiz Settings
+              </button>
+
+              <button
+                type="button"
+                class="danger-button"
+                (click)="deleteQuiz()"
+                [disabled]="deletingQuiz"
+              >
+                {{ deletingQuiz ? 'Deleting...' : 'Delete Quiz' }}
+              </button>
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- Quiz specific alerts -->
+      @if (quizErrorMessage) {
+        <div class="alert-card error-card" style="margin-top: 16px;">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-content">
+            <h2>Assessment Notice</h2>
+            <p>{{ quizErrorMessage }}</p>
+          </div>
+        </div>
+      }
+
+      @if (quizSuccessMessage) {
+        <div class="alert-card success-card" style="margin-top: 16px;">
+          <div class="alert-icon">✓</div>
+          <div class="alert-content">
+            <h2>Success</h2>
+            <p>{{ quizSuccessMessage }}</p>
+          </div>
+        </div>
+      }
+
+      @if (quizValidationErrors.length > 0) {
+        <div class="validation-error-box">
+          <h4>Required Before Publishing:</h4>
+          <ul>
+            @for (err of quizValidationErrors; track err) {
+              <li>{{ err }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- Quiz Form (Create / Edit) -->
+      @if (showQuizForm) {
+        <div class="module-card" style="margin-top: 20px;">
+          <div class="card-header">
+            <h3>{{ courseQuiz ? 'Edit Quiz Settings' : 'Create Course Assessment' }}</h3>
+          </div>
+
+          <div class="form-group">
+            <label for="quiz-title">Quiz Title</label>
+            <input
+              id="quiz-title"
+              type="text"
+              name="quizTitle"
+              [(ngModel)]="quizTitle"
+              placeholder="e.g. Full-Stack Web Development Final Assessment"
+              maxlength="200"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="quiz-description">Description</label>
+            <textarea
+              id="quiz-description"
+              name="quizDescription"
+              [(ngModel)]="quizDescription"
+              rows="3"
+              placeholder="Brief description of the assessment goals and instructions"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="quiz-passing-score">Passing Score Percentage (1 - 100%)</label>
+            <input
+              id="quiz-passing-score"
+              type="number"
+              name="quizPassingScore"
+              [(ngModel)]="quizPassingScore"
+              min="1"
+              max="100"
+            />
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="primary-button"
+              (click)="saveQuiz()"
+              [disabled]="savingQuiz"
+            >
+              {{ savingQuiz ? 'Saving...' : (courseQuiz ? 'Save Changes' : 'Create Quiz') }}
+            </button>
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="cancelQuizForm()"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Quiz Content & Questions Management -->
+      @if (courseQuiz && !showQuizForm) {
+
+        <div class="module-card" style="margin-top: 20px;">
+
+          <div class="module-header">
+            <div>
+              <span class="module-label">QUIZ OVERVIEW</span>
+              <h3>{{ courseQuiz.title }}</h3>
+              <p style="color: #64748b; font-size: 14px; margin: 4px 0 0;">
+                {{ courseQuiz.description || 'No description provided.' }}
+              </p>
+
+              <div class="quiz-meta-row">
+                <span class="score-badge">
+                  🎯 Passing Score: {{ courseQuiz.passing_score }}%
+                </span>
+                <span
+                  class="status-badge"
+                  [class.published]="courseQuiz.is_published"
+                  [class.draft]="!courseQuiz.is_published"
+                >
+                  {{ courseQuiz.is_published ? 'PUBLISHED' : 'DRAFT' }}
+                </span>
+                <span style="font-size: 13px; color: #64748b;">
+                  📝 {{ courseQuiz.questions.length }} Question{{ courseQuiz.questions.length === 1 ? '' : 's' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button
+                type="button"
+                class="primary-button"
+                (click)="toggleQuizPublish()"
+                [disabled]="publishingQuiz"
+              >
+                {{ publishingQuiz ? 'Processing...' : (courseQuiz.is_published ? 'Unpublish Quiz' : 'Validate & Publish Quiz') }}
+              </button>
+
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="openAddQuestion()"
+              >
+                + Add Question
+              </button>
+            </div>
+          </div>
+
+          <!-- Question Form -->
+          @if (showQuestionForm) {
+            <div style="padding: 16px 20px; background: #f1f5f9; border-radius: 8px; margin: 16px 0;">
+              <h4>{{ editingQuestionId ? 'Edit Question' : 'Add New Question' }}</h4>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label for="question-text">Question Text</label>
+                <textarea
+                  id="question-text"
+                  name="questionText"
+                  [(ngModel)]="questionText"
+                  rows="2"
+                  placeholder="Enter the question prompt"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="question-order">Order</label>
+                <input
+                  id="question-order"
+                  type="number"
+                  name="questionOrder"
+                  [(ngModel)]="questionOrder"
+                  min="1"
+                />
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="primary-button"
+                  (click)="saveQuestion()"
+                  [disabled]="savingQuestion"
+                >
+                  {{ savingQuestion ? 'Saving...' : 'Save Question' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="cancelQuestionForm()"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Questions List -->
+          <div class="lessons-list" style="margin-top: 16px;">
+            @if (!courseQuiz.questions || courseQuiz.questions.length === 0) {
+              <div class="empty-state">
+                <p>No questions added yet. Click "+ Add Question" above to add your first question.</p>
+              </div>
+            }
+
+            @for (question of courseQuiz.questions; track question.id; let qIdx = $index) {
+              <div class="question-card">
+                <div class="question-header">
+                  <div style="flex: 1;">
+                    <span style="font-size: 12px; font-weight: 800; color: #4f46e5;">QUESTION {{ qIdx + 1 }}</span>
+                    <p class="question-title-text">{{ question.text }}</p>
+                  </div>
+
+                  <div class="action-buttons">
+                    <button
+                      type="button"
+                      class="text-button"
+                      (click)="openAddOption(question.id)"
+                    >
+                      + Add Option
+                    </button>
+                    <button
+                      type="button"
+                      class="text-button"
+                      (click)="openEditQuestion(question)"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="text-button danger-text"
+                      (click)="deleteQuestion(question.id)"
+                      [disabled]="deletingQuestionId === question.id"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Add Option Form for this question -->
+                @if (showOptionFormForQuestionId === question.id) {
+                  <div style="margin: 12px 0; padding: 12px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    <h5 style="margin: 0 0 8px;">{{ editingOptionId ? 'Edit Option' : 'New Option' }}</h5>
+                    <div class="form-group">
+                      <input
+                        type="text"
+                        name="optionText"
+                        [(ngModel)]="optionText"
+                        placeholder="Enter option text"
+                      />
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                      <input
+                        type="checkbox"
+                        id="option-is-correct-{{ question.id }}"
+                        name="optionIsCorrect"
+                        [(ngModel)]="optionIsCorrect"
+                      />
+                      <label for="option-is-correct-{{ question.id }}" style="font-size: 13px; font-weight: 600; cursor: pointer;">
+                        Mark as correct answer
+                      </label>
+                    </div>
+                    <div class="form-actions">
+                      <button
+                        type="button"
+                        class="primary-button"
+                        (click)="saveOption(question.id)"
+                        [disabled]="savingOption"
+                      >
+                        {{ savingOption ? 'Saving...' : 'Save Option' }}
+                      </button>
+                      <button
+                        type="button"
+                        class="secondary-button"
+                        (click)="cancelOptionForm()"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                <!-- Options list for this question -->
+                <div class="options-list">
+                  @if (!question.options || question.options.length === 0) {
+                    <p style="font-size: 13px; color: #94a3b8; margin: 4px 0;">No options added yet. Click "+ Add Option" to add choices.</p>
+                  }
+
+                  @for (option of question.options; track option.id) {
+                    <div class="option-row" [class.is-correct]="option.is_correct">
+                      <div class="option-text-group">
+                        @if (option.is_correct) {
+                          <span class="correct-indicator">✓ Correct</span>
+                        } @else {
+                          <button
+                            type="button"
+                            class="mark-correct-btn"
+                            (click)="setCorrectOption(question, option.id)"
+                            title="Set as correct answer"
+                          >
+                            Mark Correct
+                          </button>
+                        }
+                        <span style="font-size: 14px; color: #1e293b;">{{ option.text }}</span>
+                      </div>
+
+                      <div class="action-buttons">
+                        <button
+                          type="button"
+                          class="text-button"
+                          (click)="openEditOption(option, question.id)"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          class="text-button danger-text"
+                          (click)="deleteOption(option.id)"
+                          [disabled]="deletingOptionId === option.id"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+    </section>
+
+
+    <!-- ==================================================
+         COURSE STATUS
+         ================================================== -->
+
+    @if (course) {
+
+      <section class="status-card">
+
+        <div class="status-header">
+
+          <div class="status-icon">
+            🌐
+          </div>
+
+
+          <div>
+
+            <span class="section-label">
+              COURSE STATUS
+            </span>
+
+            <h2>
+              {{
+                course.is_published
+                  ? 'Published'
+                  : 'Draft'
+              }}
+            </h2>
+
+            <p>
+              {{
+                course.is_published
+                  ? 'This course is currently published and available to students.'
+                  : 'This course is currently a draft and is not available to students.'
+              }}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="status-footer">
+
+          <span
+            class="status-badge"
+            [class.published]="course.is_published"
+            [class.draft]="!course.is_published"
+          >
+            {{
+              course.is_published
+                ? 'PUBLISHED'
+                : 'DRAFT'
+            }}
+          </span>
+
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="togglePublish()"
+            [disabled]="publishing"
+          >
+            @if (publishing) {
+              Updating...
+            } @else {
+              {{
+                course.is_published
+                  ? 'Unpublish Course'
+                  : 'Publish Course'
+              }}
+            }
+          </button>
+
+        </div>
+
+      </section>
+
+    }
+
+  }
+
+</div> 
