@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from certificates.models import Certificate
 from courses.models import Course, Module, Lesson
 from enrollments.models import Enrollment
 from learning.models import LessonProgress
@@ -37,6 +38,12 @@ class QuizSystemTests(APITestCase):
             email="student2@example.com",
             password="password123",
             role=User.Role.STUDENT
+        )
+        self.admin = User.objects.create_user(
+            username="admin1",
+            email="admin1@example.com",
+            password="password123",
+            role=User.Role.ADMIN
         )
 
         # Create courses
@@ -270,3 +277,147 @@ class QuizSystemTests(APITestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["certificate"]["course"], self.course1.id)
+
+    def test_student_cannot_access_questions_and_options_endpoints(self):
+        # Setup quiz with question and option
+        quiz = Quiz.objects.create(
+            course=self.course1,
+            title="Questions Endpoint Test Quiz",
+            passing_score=70,
+            is_published=True
+        )
+        q = Question.objects.create(quiz=quiz, text="Sample Question")
+        opt = Option.objects.create(question=q, text="Option A", is_correct=True)
+
+        self.client.force_authenticate(user=self.student)
+
+        # GET questions list -> 403 Forbidden
+        response = self.client.get("/api/quizzes/questions/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # GET single question -> 403 Forbidden
+        response = self.client.get(f"/api/quizzes/questions/{q.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # GET options list -> 403 Forbidden
+        response = self.client.get("/api/quizzes/options/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # GET single option -> 403 Forbidden
+        response = self.client.get(f"/api/quizzes/options/{opt.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_instructor_and_admin_access_to_questions_and_options(self):
+        quiz = Quiz.objects.create(
+            course=self.course1,
+            title="Inst Admin Quiz",
+            passing_score=70,
+            is_published=True
+        )
+        q = Question.objects.create(quiz=quiz, text="Inst Question")
+        opt = Option.objects.create(question=q, text="Inst Option", is_correct=True)
+
+        # 1. Instructor 1 (owner) -> 200 OK
+        self.client.force_authenticate(user=self.instructor1)
+        resp = self.client.get(f"/api/quizzes/questions/{q.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        # 2. Instructor 2 (not owner) -> 404 Not Found
+        self.client.force_authenticate(user=self.instructor2)
+        resp = self.client.get(f"/api/quizzes/questions/{q.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 3. Admin -> 200 OK
+        self.client.force_authenticate(user=self.admin)
+        resp = self.client.get(f"/api/quizzes/questions/{q.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        resp_opt = self.client.get(f"/api/quizzes/options/{opt.id}/")
+        self.assertEqual(resp_opt.status_code, status.HTTP_200_OK)
+
+    def test_student_can_retrieve_quiz_without_is_correct_leak(self):
+        quiz = Quiz.objects.create(
+            course=self.course1,
+            title="Safe Quiz",
+            passing_score=70,
+            is_published=True
+        )
+        q = Question.objects.create(quiz=quiz, text="Leak Check Question")
+        Option.objects.create(question=q, text="Correct Answer", is_correct=True)
+        Option.objects.create(question=q, text="Wrong Answer", is_correct=False)
+
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(f"/api/quizzes/student/{quiz.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify is_correct is NOT in the response options
+        questions = response.data.get("questions", [])
+        self.assertGreater(len(questions), 0)
+        for question in questions:
+            for option in question.get("options", []):
+                self.assertNotIn("is_correct", option)
+
+    def test_admin_and_student_access_to_quiz_attempts(self):
+        quiz = Quiz.objects.create(
+            course=self.course1,
+            title="Attempt Access Quiz",
+            passing_score=70,
+            is_published=True
+        )
+        attempt = QuizAttempt.objects.create(
+            student=self.student,
+            quiz=quiz,
+            score=1,
+            total_questions=1,
+            percentage=100,
+            is_passed=True
+        )
+
+        # 1. Student1 can view own attempt
+        self.client.force_authenticate(user=self.student)
+        resp = self.client.get(f"/api/quizzes/attempts/{attempt.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        resp_list = self.client.get("/api/quizzes/attempts/")
+        self.assertEqual(resp_list.status_code, status.HTTP_200_OK)
+
+        # 2. Student2 cannot view Student1's attempt (404)
+        self.client.force_authenticate(user=self.unauthorized_student)
+        resp = self.client.get(f"/api/quizzes/attempts/{attempt.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 3. Admin can view attempt and list attempts
+        self.client.force_authenticate(user=self.admin)
+        resp = self.client.get(f"/api/quizzes/attempts/{attempt.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        resp_list = self.client.get("/api/quizzes/attempts/")
+        self.assertEqual(resp_list.status_code, status.HTTP_200_OK)
+
+    def test_admin_and_student_access_to_certificates(self):
+        cert = Certificate.objects.create(
+            student=self.student,
+            course=self.course1,
+            completion_percentage=100
+        )
+
+        # 1. Student1 can view own certificate
+        self.client.force_authenticate(user=self.student)
+        resp = self.client.get(f"/api/certificates/{cert.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        resp_list = self.client.get("/api/certificates/my/")
+        self.assertEqual(resp_list.status_code, status.HTTP_200_OK)
+
+        # 2. Student2 cannot view Student1's certificate (404)
+        self.client.force_authenticate(user=self.unauthorized_student)
+        resp = self.client.get(f"/api/certificates/{cert.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 3. Admin can view certificate and list all certificates
+        self.client.force_authenticate(user=self.admin)
+        resp = self.client.get(f"/api/certificates/{cert.id}/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        resp_list = self.client.get("/api/certificates/my/")
+        self.assertEqual(resp_list.status_code, status.HTTP_200_OK)
+
+        # 4. Instructor cannot access certificate endpoints (403)
+        self.client.force_authenticate(user=self.instructor1)
+        resp = self.client.get("/api/certificates/my/")
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

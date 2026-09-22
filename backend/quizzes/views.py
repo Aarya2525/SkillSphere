@@ -180,9 +180,8 @@ class QuestionListCreateView(generics.ListCreateAPIView):
         elif user.role == "INSTRUCTOR":
             qs = Question.objects.filter(quiz__course__instructor=user)
         else:
-            qs = Question.objects.filter(
-                quiz__is_published=True,
-                quiz__course__is_published=True,
+            raise PermissionDenied(
+                "Only instructors and admins can access quiz questions."
             )
 
         if quiz_id:
@@ -221,9 +220,8 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
         if user.role == "INSTRUCTOR":
             return Question.objects.filter(quiz__course__instructor=user)
 
-        return Question.objects.filter(
-            quiz__is_published=True,
-            quiz__course__is_published=True,
+        raise PermissionDenied(
+            "Only instructors and admins can access quiz questions."
         )
 
     def perform_update(self, serializer):
@@ -275,9 +273,8 @@ class OptionListCreateView(generics.ListCreateAPIView):
         elif user.role == "INSTRUCTOR":
             qs = Option.objects.filter(question__quiz__course__instructor=user)
         else:
-            qs = Option.objects.filter(
-                question__quiz__is_published=True,
-                question__quiz__course__is_published=True,
+            raise PermissionDenied(
+                "Only instructors and admins can access quiz options."
             )
 
         if question_id:
@@ -316,9 +313,8 @@ class OptionDetailView(generics.RetrieveUpdateDestroyAPIView):
         if user.role == "INSTRUCTOR":
             return Option.objects.filter(question__quiz__course__instructor=user)
 
-        return Option.objects.filter(
-            question__quiz__is_published=True,
-            question__quiz__course__is_published=True,
+        raise PermissionDenied(
+            "Only instructors and admins can access quiz options."
         )
 
     def perform_update(self, serializer):
@@ -530,16 +526,22 @@ class StudentQuizAttemptDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         user = self.request.user
 
-        if user.role != "STUDENT":
-            raise PermissionDenied(
-                "Only students can view student quiz attempts."
+        if user.role == "ADMIN":
+            return QuizAttempt.objects.all().prefetch_related(
+                "answers__question",
+                "answers__selected_option",
             )
 
-        return QuizAttempt.objects.filter(
-            student=user
-        ).prefetch_related(
-            "answers__question",
-            "answers__selected_option",
+        if user.role == "STUDENT":
+            return QuizAttempt.objects.filter(
+                student=user
+            ).prefetch_related(
+                "answers__question",
+                "answers__selected_option",
+            )
+
+        raise PermissionDenied(
+            "Only students and admins can view quiz attempts."
         )
 
 
@@ -554,18 +556,26 @@ class StudentQuizAttemptListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
 
-        if user.role != "STUDENT":
-            raise PermissionDenied(
-                "Only students can view quiz attempt history."
+        if user.role == "ADMIN":
+            return QuizAttempt.objects.all().prefetch_related(
+                "answers__question",
+                "answers__selected_option",
+            ).order_by(
+                "-submitted_at"
             )
 
-        return QuizAttempt.objects.filter(
-            student=user
-        ).prefetch_related(
-            "answers__question",
-            "answers__selected_option",
-        ).order_by(
-            "-submitted_at"
+        if user.role == "STUDENT":
+            return QuizAttempt.objects.filter(
+                student=user
+            ).prefetch_related(
+                "answers__question",
+                "answers__selected_option",
+            ).order_by(
+                "-submitted_at"
+            )
+
+        raise PermissionDenied(
+            "Only students and admins can view quiz attempt history."
         )
 
 

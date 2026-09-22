@@ -225,18 +225,24 @@ class StudentCertificateListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        student = self.request.user
+        user = self.request.user
 
-        if student.role != "STUDENT":
-            raise PermissionDenied(
-                "Only students can view their certificates."
+        if user.role == "ADMIN":
+            return Certificate.objects.all().select_related(
+                "student",
+                "course",
             )
 
-        return Certificate.objects.filter(
-            student=student
-        ).select_related(
-            "student",
-            "course",
+        if user.role == "STUDENT":
+            return Certificate.objects.filter(
+                student=user
+            ).select_related(
+                "student",
+                "course",
+            )
+
+        raise PermissionDenied(
+            "Only students and admins can view certificates."
         )
 
 
@@ -249,18 +255,24 @@ class StudentCertificateDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        student = self.request.user
+        user = self.request.user
 
-        if student.role != "STUDENT":
-            raise PermissionDenied(
-                "Only students can view their certificates."
+        if user.role == "ADMIN":
+            return Certificate.objects.all().select_related(
+                "student",
+                "course",
             )
 
-        return Certificate.objects.filter(
-            student=student
-        ).select_related(
-            "student",
-            "course",
+        if user.role == "STUDENT":
+            return Certificate.objects.filter(
+                student=user
+            ).select_related(
+                "student",
+                "course",
+            )
+
+        raise PermissionDenied(
+            "Only students and admins can view certificates."
         )
 
 

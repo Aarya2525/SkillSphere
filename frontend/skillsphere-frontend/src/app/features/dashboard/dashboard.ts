@@ -52,6 +52,12 @@ export class DashboardComponent implements OnInit {
   }
 
   loadDashboard(): void {
+    const snapshot = this.authService.getCurrentUserSnapshot();
+    if (snapshot?.role === 'INSTRUCTOR') {
+      this.router.navigate(['/instructor/dashboard']);
+      return;
+    }
+
     this.loading = true;
     this.errorMessage = '';
     this.completedRequests = 0;
@@ -59,6 +65,11 @@ export class DashboardComponent implements OnInit {
     this.authService.getCurrentUser().subscribe({
       next: user => {
         this.user = user;
+
+        if (user.role === 'INSTRUCTOR') {
+          this.router.navigate(['/instructor/dashboard']);
+          return;
+        }
 
         this.loadEnrollments();
         this.loadProgress();

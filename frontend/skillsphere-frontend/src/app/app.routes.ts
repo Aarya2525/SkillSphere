@@ -69,7 +69,10 @@ export const routes: Routes = [
        */
       {
         path: 'dashboard',
-        component: DashboardComponent
+        component: DashboardComponent,
+        canActivate: [
+          roleGuard(['STUDENT', 'ADMIN'])
+        ]
       },
 
       /*
@@ -190,12 +193,18 @@ export const routes: Routes = [
 
       {
         path: 'certificates',
-        component: CertificateListComponent
+        component: CertificateListComponent,
+        canActivate: [
+          roleGuard(['STUDENT', 'ADMIN'])
+        ]
       },
 
       {
         path: 'certificates/:id',
-        component: CertificateDetailComponent
+        component: CertificateDetailComponent,
+        canActivate: [
+          roleGuard(['STUDENT', 'ADMIN'])
+        ]
       },
 
       {
