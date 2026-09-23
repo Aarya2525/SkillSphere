@@ -1,69 +1,129 @@
 <div class="courses-page">
 
   <div class="page-header">
-    <div>
-      <h1>Courses</h1>
-
+    <div class="header-intro">
+      <span class="page-label">Catalog</span>
+      <h1>Explore Courses</h1>
       <p>
-        Explore available courses and start learning.
+        Discover structured learning paths created by expert instructors.
       </p>
+    </div>
+
+    <!-- SEARCH & FILTER TOOLBAR -->
+    <div class="catalog-toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Search by course title, keywords, or instructor..."
+          [(ngModel)]="searchTerm"
+          class="search-input"
+        />
+        @if (searchTerm) {
+          <button type="button" class="clear-btn" (click)="clearSearch()">✕</button>
+        }
+      </div>
+
+      <div class="filter-tabs">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'ALL'"
+          (click)="setActiveTab('ALL')"
+        >
+          All ({{ courses.length }})
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'ENROLLED'"
+          (click)="setActiveTab('ENROLLED')"
+        >
+          Enrolled ({{ enrollments.length }})
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'AVAILABLE'"
+          (click)="setActiveTab('AVAILABLE')"
+        >
+          Available ({{ courses.length - enrollments.length }})
+        </button>
+      </div>
     </div>
   </div>
 
   @if (loading) {
-
     <div class="state-card">
-      <p>Loading courses...</p>
+      <div class="state-icon">📚</div>
+      <p>Loading course catalog...</p>
     </div>
-
   }
 
   @if (errorMessage) {
-
     <div class="error-card">
-
+      <h2>Something went wrong</h2>
       <p>{{ errorMessage }}</p>
-
       <button
         type="button"
+        class="retry-button"
         (click)="loadCourses()"
       >
         Try Again
       </button>
-
     </div>
-
   }
 
   @if (!loading && !errorMessage && courses.length === 0) {
-
     <div class="state-card">
-
+      <div class="state-icon">📚</div>
       <h2>No courses available</h2>
-
       <p>
-        There are currently no published courses.
+        There are currently no published courses in the catalog.
       </p>
-
     </div>
-
   }
 
-  @if (!loading && !errorMessage && courses.length > 0) {
+  @if (!loading && !errorMessage && courses.length > 0 && filteredCourses.length === 0) {
+    <div class="state-card">
+      <div class="state-icon">🔍</div>
+      <h2>No matching courses</h2>
+      <p>
+        No courses found matching "{{ searchTerm }}".
+      </p>
+      <button type="button" class="retry-button" (click)="clearSearch()">
+        Clear Search
+      </button>
+    </div>
+  }
+
+  @if (!loading && !errorMessage && filteredCourses.length > 0) {
 
     <div class="course-grid">
 
-      @for (course of courses; track course.id) {
+      @for (course of filteredCourses; track course.id) {
 
-        <article class="course-card">
+        <article class="course-card" [class.enrolled]="isEnrolled(course.id)">
 
-          <div class="course-icon">
-            📚
+          <div class="course-card-top">
+            <div class="course-icon">
+              📚
+            </div>
+
+            <div class="card-badges">
+              @if (isEnrolled(course.id)) {
+                <span class="badge enrolled-badge">✓ Enrolled</span>
+              } @else {
+                <span class="badge available-badge">Available</span>
+              }
+            </div>
           </div>
 
           <div class="course-content">
 
-            <h2>
+            <h2 class="course-title">
               {{ course.title }}
             </h2>
 
@@ -71,28 +131,25 @@
               {{ course.description }}
             </p>
 
-            <div class="course-info">
-
-              <span>
-                👨‍🏫 {{ course.instructor_name }}
+            <div class="course-meta">
+              <span class="meta-item">
+                👨‍🏫 {{ course.instructor_name || 'Instructor' }}
               </span>
 
-              <span>
-                {{
-                  course.is_published
-                    ? 'Published'
-                    : 'Draft'
-                }}
+              <span class="meta-item">
+                📅 {{ course.created_at | date:'mediumDate' }}
               </span>
-
             </div>
 
-            <button
-              type="button"
-              (click)="viewCourse(course.id)"
-            >
-              View Course
-            </button>
+            <div class="card-actions">
+              <button
+                type="button"
+                class="view-course-btn"
+                (click)="viewCourse(course.id)"
+              >
+                {{ isEnrolled(course.id) ? 'Continue Learning →' : 'View Course Details →' }}
+              </button>
+            </div>
 
           </div>
 
@@ -104,4 +161,4 @@
 
   }
 
-</div> 
+</div>

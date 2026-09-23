@@ -389,7 +389,7 @@
             track review.id
           ) {
 
-            <article class="review-item">
+            <article class="review-item review-card">
 
               @if (editingReviewId === review.id) {
 
@@ -506,7 +506,7 @@
                   </p>
 
 
-                  @if (review.student === 1) {
+                  @if (isOwnReview(review)) {
 
                     <div class="review-actions">
 

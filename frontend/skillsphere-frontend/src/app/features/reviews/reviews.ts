@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import {
+  AuthService,
+  User
+} from '../../core/services/auth.service';
+
+import {
   ReviewService,
   Review,
   CreateReviewRequest
@@ -22,10 +27,12 @@ import {
   styleUrl: './reviews.scss'
 })
 export class ReviewsComponent implements OnInit {
+  private readonly authService = inject(AuthService);
   private readonly reviewService = inject(ReviewService);
   private readonly enrollmentService = inject(EnrollmentService);
   private readonly router = inject(Router);
 
+  currentUser: User | null = null;
   reviews: Review[] = [];
   enrollments: Enrollment[] = [];
 
@@ -45,7 +52,18 @@ export class ReviewsComponent implements OnInit {
   editComment = '';
 
   ngOnInit(): void {
-    this.loadData();
+    this.currentUser = this.authService.getCurrentUserSnapshot();
+    if (!this.currentUser) {
+      this.authService.getCurrentUser().subscribe({
+        next: (u) => {
+          this.currentUser = u;
+          this.loadData();
+        },
+        error: () => this.loadData()
+      });
+    } else {
+      this.loadData();
+    }
   }
 
   loadData(): void {
@@ -53,12 +71,11 @@ export class ReviewsComponent implements OnInit {
     this.errorMessage = '';
 
     this.enrollmentService.getEnrollments().subscribe({
-      next: enrollments => {
+      next: (enrollments) => {
         this.enrollments = enrollments;
         this.loadReviews();
       },
-
-      error: error => {
+      error: (error) => {
         console.error('Failed to load enrollments:', error);
         this.loading = false;
         this.errorMessage =
@@ -69,12 +86,11 @@ export class ReviewsComponent implements OnInit {
 
   loadReviews(): void {
     this.reviewService.getReviews().subscribe({
-      next: reviews => {
+      next: (reviews) => {
         this.reviews = reviews;
         this.loading = false;
       },
-
-      error: error => {
+      error: (error) => {
         console.error('Failed to load reviews:', error);
         this.loading = false;
         this.errorMessage =
@@ -130,24 +146,17 @@ export class ReviewsComponent implements OnInit {
     this.successMessage = '';
 
     this.reviewService.createReview(data).subscribe({
-      next: review => {
-        this.reviews = [
-          review,
-          ...this.reviews
-        ];
-
+      next: (review) => {
+        this.reviews = [review, ...this.reviews];
         this.submitting = false;
         this.successMessage =
           'Your review has been submitted successfully.';
-
         this.selectedCourseId = null;
         this.rating = 5;
         this.comment = '';
       },
-
-      error: error => {
+      error: (error) => {
         console.error('Failed to create review:', error);
-
         this.submitting = false;
 
         if (error.status === 400) {
@@ -169,21 +178,31 @@ export class ReviewsComponent implements OnInit {
   }
 
   canReviewCourse(courseId: number): boolean {
+    if (!this.currentUser) {
+      return !this.reviews.some(review => review.course === courseId);
+    }
     return !this.reviews.some(
-      review => review.course === courseId
+      (review) =>
+        review.course === courseId &&
+        (review.student === this.currentUser!.id ||
+          review.student_name === this.currentUser!.username)
+    );
+  }
+
+  isOwnReview(review: Review): boolean {
+    if (!this.currentUser) return false;
+    return (
+      review.student === this.currentUser.id ||
+      review.student_name === this.currentUser.username
     );
   }
 
   getReviewedCourseIds(): number[] {
-    return this.reviews.map(
-      review => review.course
-    );
+    return this.reviews.map((review) => review.course);
   }
 
   getCourseReviews(courseId: number): Review[] {
-    return this.reviews.filter(
-      review => review.course === courseId
-    );
+    return this.reviews.filter((review) => review.course === courseId);
   }
 
   getAverageRating(): number {
@@ -200,8 +219,7 @@ export class ReviewsComponent implements OnInit {
   }
 
   getStars(rating: number): string {
-    return '★'.repeat(rating) +
-      '☆'.repeat(5 - rating);
+    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
   }
 
   formatDate(date: string): string {
@@ -241,42 +259,37 @@ export class ReviewsComponent implements OnInit {
       return;
     }
 
-    this.reviewService.updateReview(
-      review.id,
-      {
+    this.reviewService
+      .updateReview(review.id, {
         rating: this.editRating,
         comment: this.editComment.trim()
-      }
-    ).subscribe({
-      next: updatedReview => {
-        this.reviews = this.reviews.map(
-          item =>
-            item.id === updatedReview.id
-              ? updatedReview
-              : item
-        );
+      })
+      .subscribe({
+        next: (updatedReview) => {
+          this.reviews = this.reviews.map((item) =>
+            item.id === updatedReview.id ? updatedReview : item
+          );
 
-        this.editingReviewId = null;
-        this.successMessage =
-          'Your review has been updated successfully.';
-        this.errorMessage = '';
-      },
+          this.editingReviewId = null;
+          this.successMessage =
+            'Your review has been updated successfully.';
+          this.errorMessage = '';
+        },
+        error: (error) => {
+          console.error('Failed to update review:', error);
 
-      error: error => {
-        console.error('Failed to update review:', error);
-
-        if (error.status === 403) {
-          this.errorMessage =
-            'You are not allowed to edit this review.';
-        } else if (error.status === 401) {
-          this.errorMessage =
-            'Your session has expired. Please log in again.';
-        } else {
-          this.errorMessage =
-            'Unable to update your review. Please try again.';
+          if (error.status === 403) {
+            this.errorMessage =
+              'You are not allowed to edit this review.';
+          } else if (error.status === 401) {
+            this.errorMessage =
+              'Your session has expired. Please log in again.';
+          } else {
+            this.errorMessage =
+              'Unable to update your review. Please try again.';
+          }
         }
-      }
-    });
+      });
   }
 
   deleteReview(review: Review): void {
@@ -291,15 +304,14 @@ export class ReviewsComponent implements OnInit {
     this.reviewService.deleteReview(review.id).subscribe({
       next: () => {
         this.reviews = this.reviews.filter(
-          item => item.id !== review.id
+          (item) => item.id !== review.id
         );
 
         this.successMessage =
           'Your review has been deleted successfully.';
         this.errorMessage = '';
       },
-
-      error: error => {
+      error: (error) => {
         console.error('Failed to delete review:', error);
 
         if (error.status === 403) {
@@ -323,4 +335,4 @@ export class ReviewsComponent implements OnInit {
   goToDashboard(): void {
     this.router.navigate(['/dashboard']);
   }
-} 
+}

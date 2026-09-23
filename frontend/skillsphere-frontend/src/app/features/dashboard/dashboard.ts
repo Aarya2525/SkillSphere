@@ -22,6 +22,21 @@ import {
   QuizAttempt
 } from '../../core/services/quiz';
 
+import {
+  CourseService,
+  Course
+} from '../../core/services/course';
+
+import {
+  CertificateService,
+  Certificate
+} from '../../core/services/certificate';
+
+import {
+  ReviewService,
+  Review
+} from '../../core/services/review';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -34,6 +49,9 @@ export class DashboardComponent implements OnInit {
   private readonly enrollmentService = inject(EnrollmentService);
   private readonly learningService = inject(LearningService);
   private readonly quizService = inject(QuizService);
+  private readonly courseService = inject(CourseService);
+  private readonly certificateService = inject(CertificateService);
+  private readonly reviewService = inject(ReviewService);
   private readonly router = inject(Router);
 
   user: User | null = null;
@@ -42,6 +60,11 @@ export class DashboardComponent implements OnInit {
   progress: LessonProgress[] = [];
   attempts: QuizAttempt[] = [];
 
+  // Admin platform data
+  allCourses: Course[] = [];
+  allCertificates: Certificate[] = [];
+  allReviews: Review[] = [];
+
   loading = true;
   errorMessage = '';
 
@@ -49,6 +72,10 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDashboard();
+  }
+
+  get isAdmin(): boolean {
+    return this.user?.role === 'ADMIN';
   }
 
   loadDashboard(): void {
@@ -71,9 +98,13 @@ export class DashboardComponent implements OnInit {
           return;
         }
 
-        this.loadEnrollments();
-        this.loadProgress();
-        this.loadAttempts();
+        if (user.role === 'ADMIN') {
+          this.loadAdminData();
+        } else {
+          this.loadEnrollments();
+          this.loadProgress();
+          this.loadAttempts();
+        }
       },
 
       error: error => {
@@ -93,6 +124,41 @@ export class DashboardComponent implements OnInit {
         this.errorMessage =
           'Unable to load your dashboard.';
       }
+    });
+  }
+
+  private loadAdminData(): void {
+    let pending = 5;
+    const checkDone = () => {
+      pending--;
+      if (pending <= 0) {
+        this.loading = false;
+      }
+    };
+
+    this.courseService.getCourses().subscribe({
+      next: courses => { this.allCourses = courses; checkDone(); },
+      error: () => checkDone()
+    });
+
+    this.enrollmentService.getEnrollments().subscribe({
+      next: enrollments => { this.enrollments = enrollments; checkDone(); },
+      error: () => checkDone()
+    });
+
+    this.quizService.getAttempts().subscribe({
+      next: attempts => { this.attempts = attempts; checkDone(); },
+      error: () => checkDone()
+    });
+
+    this.certificateService.getCertificates().subscribe({
+      next: certs => { this.allCertificates = certs; checkDone(); },
+      error: () => checkDone()
+    });
+
+    this.reviewService.getReviews().subscribe({
+      next: reviews => { this.allReviews = reviews; checkDone(); },
+      error: () => checkDone()
     });
   }
 
@@ -181,7 +247,7 @@ export class DashboardComponent implements OnInit {
   getLatestPercentage(): number {
     const attempt = this.latestAttempt;
 
-    if (!attempt || attempt.answers.length === 0) {
+    if (!attempt || !attempt.answers || attempt.answers.length === 0) {
       return 0;
     }
 
@@ -191,12 +257,8 @@ export class DashboardComponent implements OnInit {
   }
 
   getScoreClass(attempt: QuizAttempt): string {
-    const percentage =
-      attempt.answers.length > 0
-        ? Math.round(
-            (attempt.score / attempt.answers.length) * 100
-          )
-        : 0;
+    const count = attempt.answers ? attempt.answers.length : (attempt.total_questions || 1);
+    const percentage = Math.round((attempt.score / count) * 100);
 
     if (percentage >= 80) {
       return 'excellent';
@@ -236,6 +298,18 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/quizzes/history']);
   }
 
+  goToCertificates(): void {
+    this.router.navigate(['/certificates']);
+  }
+
+  goToReviews(): void {
+    this.router.navigate(['/reviews']);
+  }
+
+  goToNotifications(): void {
+    this.router.navigate(['/notifications']);
+  }
+
   viewAttempt(attemptId: number): void {
     this.router.navigate([
       '/quizzes/attempts',
@@ -247,4 +321,4 @@ export class DashboardComponent implements OnInit {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
-} 
+}

@@ -37,6 +37,12 @@ import {
   CertificateService
 } from '../../../core/services/certificate';
 
+import {
+  ReviewService,
+  Review,
+  CourseRating
+} from '../../../core/services/review';
+
 @Component({
   selector: 'app-course-detail',
   standalone: true,
@@ -44,36 +50,20 @@ import {
   templateUrl: './course-detail.html',
   styleUrl: './course-detail.scss'
 })
-export class CourseDetailComponent
-  implements OnInit {
+export class CourseDetailComponent implements OnInit {
 
-  private readonly courseService =
-    inject(CourseService);
-
-  private readonly enrollmentService =
-    inject(EnrollmentService);
-
-  private readonly quizService =
-    inject(QuizService);
-
-  private readonly learningService =
-    inject(LearningService);
-
-  private readonly certificateService =
-    inject(CertificateService);
-
-  private readonly route =
-    inject(ActivatedRoute);
-
-  private readonly router =
-    inject(Router);
+  private readonly courseService = inject(CourseService);
+  private readonly enrollmentService = inject(EnrollmentService);
+  private readonly quizService = inject(QuizService);
+  private readonly learningService = inject(LearningService);
+  private readonly certificateService = inject(CertificateService);
+  private readonly reviewService = inject(ReviewService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   course: Course | null = null;
-
   modules: Module[] = [];
-
   lessons: Lesson[] = [];
-
   enrollment: Enrollment | null = null;
 
   quiz: Quiz | null = null;
@@ -83,302 +73,191 @@ export class CourseDetailComponent
   completedLessons = 0;
   claimingCertificate = false;
 
+  reviews: Review[] = [];
+  courseRating: CourseRating | null = null;
+
   loading = true;
-
   enrolling = false;
-
   errorMessage = '';
-
   successMessage = '';
 
   private courseId: number | null = null;
 
   ngOnInit(): void {
-
-    const courseId =
-      Number(
-        this.route.snapshot.paramMap.get('id')
-      );
+    const courseId = Number(this.route.snapshot.paramMap.get('id'));
 
     if (!courseId) {
-
       this.loading = false;
-
-      this.errorMessage =
-        'Invalid course.';
-
+      this.errorMessage = 'Invalid course.';
       return;
     }
 
     this.courseId = courseId;
-
     this.loadCourse(courseId);
-
     this.loadModules(courseId);
-
     this.loadLessons();
-
     this.loadEnrollment();
-
     this.loadCourseQuiz(courseId);
-
     this.loadLessonProgress();
+    this.loadReviewsAndRating(courseId);
   }
 
   loadCourse(courseId: number): void {
-
-    this.courseService
-      .getCourse(courseId)
-      .subscribe({
-
-        next: (course: Course) => {
-
-          this.course = course;
-
-          this.checkLoadingComplete();
-        },
-
-        error: (error) => {
-
-          console.error(
-            'Failed to load course:',
-            error
-          );
-
-          this.loading = false;
-
-          this.errorMessage =
-            'Unable to load the course. Please try again.';
-        }
-      });
+    this.courseService.getCourse(courseId).subscribe({
+      next: (course: Course) => {
+        this.course = course;
+        this.checkLoadingComplete();
+      },
+      error: (error) => {
+        console.error('Failed to load course:', error);
+        this.loading = false;
+        this.errorMessage = 'Unable to load the course. Please try again.';
+      }
+    });
   }
 
   loadModules(courseId: number): void {
-
-    this.courseService
-      .getModules()
-      .subscribe({
-
-        next: (modules: Module[]) => {
-
-          this.modules =
-            modules.filter(
-              module =>
-                module.course === courseId
-            );
-
-          this.checkLoadingComplete();
-        },
-
-        error: (error) => {
-
-          console.error(
-            'Failed to load modules:',
-            error
-          );
-
-          this.loading = false;
-
-          this.errorMessage =
-            'Unable to load course modules.';
-        }
-      });
+    this.courseService.getModules().subscribe({
+      next: (modules: Module[]) => {
+        this.modules = modules.filter(module => module.course === courseId);
+        this.checkLoadingComplete();
+      },
+      error: (error) => {
+        console.error('Failed to load modules:', error);
+        this.loading = false;
+        this.errorMessage = 'Unable to load course modules.';
+      }
+    });
   }
 
   loadLessons(): void {
-
-    this.courseService
-      .getLessons()
-      .subscribe({
-
-        next: (lessons: Lesson[]) => {
-
-          this.lessons = lessons;
-
-          this.checkLoadingComplete();
-        },
-
-        error: (error) => {
-
-          console.error(
-            'Failed to load lessons:',
-            error
-          );
-
-          this.loading = false;
-
-          this.errorMessage =
-            'Unable to load course lessons.';
-        }
-      });
+    this.courseService.getLessons().subscribe({
+      next: (lessons: Lesson[]) => {
+        this.lessons = lessons;
+        this.checkLoadingComplete();
+      },
+      error: (error) => {
+        console.error('Failed to load lessons:', error);
+        this.loading = false;
+        this.errorMessage = 'Unable to load course lessons.';
+      }
+    });
   }
 
   loadEnrollment(): void {
+    this.enrollmentService.getEnrollments().subscribe({
+      next: (enrollments: Enrollment[]) => {
+        if (this.courseId === null) return;
+        this.enrollment = enrollments.find(e => e.course === this.courseId) ?? null;
+      },
+      error: (error) => {
+        console.error('Failed to load enrollments:', error);
+      }
+    });
+  }
 
-    this.enrollmentService
-      .getEnrollments()
-      .subscribe({
+  loadReviewsAndRating(courseId: number): void {
+    this.reviewService.getReviews(courseId).subscribe({
+      next: (reviews) => {
+        this.reviews = reviews;
+      },
+      error: () => {}
+    });
 
-        next: (enrollments: Enrollment[]) => {
-
-          if (this.courseId === null) {
-            return;
-          }
-
-          this.enrollment =
-            enrollments.find(
-              enrollment =>
-                enrollment.course === this.courseId
-            ) ?? null;
-        },
-
-        error: (error) => {
-
-          console.error(
-            'Failed to load enrollments:',
-            error
-          );
-
-          /*
-           * Enrollment lookup should not prevent
-           * the course itself from loading.
-           */
-        }
-      });
+    this.reviewService.getCourseRating(courseId).subscribe({
+      next: (rating) => {
+        this.courseRating = rating;
+      },
+      error: () => {}
+    });
   }
 
   checkLoadingComplete(): void {
-
-    if (
-      this.course !== null &&
-      this.modules !== undefined &&
-      this.lessons !== undefined
-    ) {
-
+    if (this.course !== null && this.modules !== undefined && this.lessons !== undefined) {
       this.loading = false;
     }
   }
 
-  getLessonsForModule(
-    moduleId: number
-  ): Lesson[] {
-
+  getLessonsForModule(moduleId: number): Lesson[] {
     return this.lessons
-      .filter(
-        lesson =>
-          lesson.module === moduleId
-      )
-      .sort(
-        (a, b) =>
-          a.order - b.order
-      );
+      .filter(lesson => lesson.module === moduleId)
+      .sort((a, b) => a.order - b.order);
   }
 
   get isEnrolled(): boolean {
     return this.enrollment !== null;
   }
 
-  enroll(): void {
+  get averageRating(): number {
+    if (this.courseRating) return this.courseRating.average_rating;
+    if (this.reviews.length === 0) return 0;
+    const sum = this.reviews.reduce((acc, r) => acc + r.rating, 0);
+    return sum / this.reviews.length;
+  }
 
-    if (
-      this.enrolling ||
-      this.courseId === null ||
-      this.isEnrolled
-    ) {
+  getStars(rating: number): string {
+    const rounded = Math.round(rating);
+    return '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
+  }
+
+  enroll(): void {
+    if (this.enrolling || this.courseId === null || this.isEnrolled) {
       return;
     }
 
     this.enrolling = true;
-
     this.errorMessage = '';
-
     this.successMessage = '';
 
-    this.enrollmentService
-      .createEnrollment({
-        course: this.courseId
-      })
-      .subscribe({
+    this.enrollmentService.createEnrollment({
+      course: this.courseId
+    }).subscribe({
+      next: (enrollment: Enrollment) => {
+        this.enrollment = enrollment;
+        this.enrolling = false;
+        this.successMessage = 'You are now enrolled in this course.';
 
-        next: (enrollment: Enrollment) => {
-
-          this.enrollment =
-            enrollment;
-
-          this.enrolling = false;
-
-          this.successMessage =
-            'You are now enrolled in this course.';
-
-          if (this.courseId !== null) {
-            this.loadCourseQuiz(this.courseId);
-            this.loadLessonProgress();
-          }
-        },
-
-        error: (error) => {
-
-          console.error(
-            'Failed to enroll in course:',
-            error
-          );
-
-          this.enrolling = false;
-
-          if (error.status === 400) {
-
-            this.errorMessage =
-              'You are already enrolled in this course.';
-
-            this.loadEnrollment();
-
-          } else if (error.status === 403) {
-
-            this.errorMessage =
-              'You cannot enroll in this course.';
-
-          } else if (error.status === 401) {
-
-            this.errorMessage =
-              'Your session has expired. Please log in again.';
-
-          } else {
-
-            this.errorMessage =
-              'Unable to enroll in this course. Please try again.';
-          }
+        if (this.courseId !== null) {
+          this.loadCourseQuiz(this.courseId);
+          this.loadLessonProgress();
         }
-      });
+      },
+      error: (error) => {
+        console.error('Failed to enroll in course:', error);
+        this.enrolling = false;
+
+        if (error.status === 400) {
+          this.errorMessage = 'You are already enrolled in this course.';
+          this.loadEnrollment();
+        } else if (error.status === 403) {
+          this.errorMessage = 'You cannot enroll in this course.';
+        } else if (error.status === 401) {
+          this.errorMessage = 'Your session has expired. Please log in again.';
+        } else {
+          this.errorMessage = 'Unable to enroll in this course. Please try again.';
+        }
+      }
+    });
   }
 
   startLesson(lessonId: number): void {
-
     if (!this.isEnrolled) {
-
-      this.errorMessage =
-        'Please enroll in this course before starting a lesson.';
-
+      this.errorMessage = 'Please enroll in this course before starting a lesson.';
       return;
     }
-
-    this.router.navigate([
-      '/learning/lesson',
-      lessonId
-    ]);
+    this.router.navigate(['/learning/lesson', lessonId]);
   }
 
   goToLearning(): void {
+    this.router.navigate(['/learning']);
+  }
 
-    this.router.navigate([
-      '/learning'
-    ]);
+  goToReviews(): void {
+    this.router.navigate(['/reviews']);
   }
 
   goBack(): void {
-
-    this.router.navigate([
-      '/courses'
-    ]);
+    this.router.navigate(['/courses']);
   }
 
   // --------------------------------------------------
@@ -466,4 +345,4 @@ export class CourseDetailComponent
       }
     });
   }
-} 
+}

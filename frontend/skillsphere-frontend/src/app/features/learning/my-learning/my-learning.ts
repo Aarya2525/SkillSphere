@@ -254,6 +254,10 @@ export class MyLearningComponent implements OnInit {
     this.router.navigate(['/courses', courseId]);
   }
 
+  goToCourses(): void {
+    this.router.navigate(['/courses']);
+  }
+
   getProgressLabel(course: LearningCourse): string {
     if (course.totalLessons === 0) {
       return 'No lessons available';

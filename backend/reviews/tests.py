@@ -193,3 +193,42 @@ class ReviewLifecycleTests(APITestCase):
         Review.objects.create(student=self.student1, course=self.course, rating=5, comment="R1")
         with self.assertRaises(IntegrityError):
             Review.objects.create(student=self.student1, course=self.course, rating=4, comment="R2")
+
+    # 11. Regression: Student can delete their own review
+    def test_student_can_delete_own_review(self):
+        review = Review.objects.create(
+            student=self.student1,
+            course=self.course,
+            rating=5,
+            comment="Delete me",
+        )
+        self.client.force_authenticate(user=self.student1)
+        response = self.client.delete(f"/api/reviews/{review.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Review.objects.filter(id=review.id).exists())
+
+    # 12. Regression: Student cannot delete another student's review (ownership protection)
+    def test_student_cannot_delete_another_students_review(self):
+        review = Review.objects.create(
+            student=self.student1,
+            course=self.course,
+            rating=5,
+            comment="Protected review",
+        )
+        self.client.force_authenticate(user=self.student2)
+        response = self.client.delete(f"/api/reviews/{review.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Review.objects.filter(id=review.id).exists())
+
+    # 13. Regression: Admin can delete/moderate any review
+    def test_admin_can_delete_any_review(self):
+        review = Review.objects.create(
+            student=self.student1,
+            course=self.course,
+            rating=1,
+            comment="Spam review",
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.delete(f"/api/reviews/{review.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Review.objects.filter(id=review.id).exists())

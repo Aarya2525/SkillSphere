@@ -1,229 +1,341 @@
- <div class="lesson-detail-page">
+<div class="lesson-player-page">
 
-  @if (loading) {
-
+  @if (loading && !lesson) {
     <div class="state-card">
-      <p>Loading lesson...</p>
+      <div class="state-icon">📖</div>
+      <p>Loading course player...</p>
     </div>
-
   }
 
-  @if (errorMessage) {
-
+  @if (errorMessage && !lesson) {
     <div class="error-card">
-
       <h2>Something went wrong</h2>
-
-      <p>
-        {{ errorMessage }}
-      </p>
-
-      <button
-        type="button"
-        (click)="goBack()"
-      >
-        Back
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="btn-primary" (click)="goBack()">
+        ← Back to Course
       </button>
-
     </div>
-
   }
 
-  @if (!loading && !errorMessage && lesson) {
+  @if (lesson) {
 
-    <button
-      type="button"
-      class="back-button"
-      (click)="goBack()"
-    >
-      ← Back to Course
-    </button>
+    <!-- TOP PLAYER CONTROLS & COURSE PROGRESS -->
+    <header class="player-topbar">
+      <div class="topbar-left">
+        <button type="button" class="back-link" (click)="goBack()">
+          ← <span>{{ course?.title || 'Back to Course' }}</span>
+        </button>
 
-    <article class="lesson-card">
-
-      <div class="lesson-header">
-
-        <div class="lesson-icon">
-          📖
-        </div>
-
-        <div>
-
-          <span class="lesson-label">
-            Lesson {{ lesson.order }}
-          </span>
-
-          <h1>
-            {{ lesson.title }}
-          </h1>
-
-        </div>
-
+        <button
+          type="button"
+          class="curriculum-toggle-btn"
+          (click)="toggleSidebar()"
+          [class.open]="sidebarOpen"
+        >
+          ☰ Curriculum ({{ completedLessonsCount }}/{{ courseLessons.length }})
+        </button>
       </div>
 
-      <div class="lesson-content">
-
-        <h2>Lesson Content</h2>
-
-        <p>
-          {{ lesson.content }}
-        </p>
-
+      <div class="topbar-right">
+        <div class="course-progress-box">
+          <div class="progress-labels">
+            <span class="progress-text">Course Progress</span>
+            <strong class="progress-percent">{{ progressPercentage }}%</strong>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" [style.width.%]="progressPercentage"></div>
+          </div>
+        </div>
       </div>
+    </header>
 
-      @if (successMessage) {
+    <!-- MAIN TWO-COLUMN PLAYER LAYOUT -->
+    <div class="player-layout">
 
-        <div class="success-message">
-          ✓ {{ successMessage }}
+      <!-- CURRICULUM SIDEBAR -->
+      <aside class="curriculum-sidebar" [class.open]="sidebarOpen">
+        <div class="sidebar-head">
+          <div class="sidebar-title">
+            <span>📚 Course Curriculum</span>
+            <span class="count-badge">{{ courseLessons.length }} Lessons</span>
+          </div>
+          <button type="button" class="close-sidebar-btn" (click)="toggleSidebar()">✕</button>
         </div>
 
-      }
+        <div class="curriculum-modules-list">
+          @for (mod of courseModules; track mod.id) {
+            <div class="module-group">
+              <div class="module-title-bar">
+                <span class="module-order">Module {{ mod.order }}</span>
+                <h4>{{ mod.title }}</h4>
+              </div>
 
-      @if (errorMessage) {
+              <div class="module-lessons">
+                @for (l of getLessonsForModule(mod.id); track l.id) {
+                  <button
+                    type="button"
+                    class="lesson-nav-item"
+                    [class.active]="l.id === lesson.id"
+                    [class.completed]="isLessonCompleted(l.id)"
+                    (click)="goToLesson(l.id)"
+                  >
+                    <span class="status-indicator">
+                      @if (isLessonCompleted(l.id)) {
+                        ✓
+                      } @else {
+                        {{ l.order }}
+                      }
+                    </span>
 
-        <div class="inline-error">
-          {{ errorMessage }}
+                    <span class="lesson-nav-title">{{ l.title }}</span>
+
+                    @if (l.id === lesson.id) {
+                      <span class="current-badge">Current</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- QUIZ SHORTCUT CARD IN SIDEBAR -->
+          @if (courseQuiz) {
+            <div class="sidebar-quiz-card" [class.passed]="hasPassedQuiz">
+              <div class="quiz-card-head">
+                <span class="quiz-icon">📝</span>
+                <div>
+                  <h5>Course Assessment</h5>
+                  <span class="quiz-subtext">Passing score: {{ courseQuiz.passing_score }}%</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="take-quiz-btn"
+                (click)="goToQuiz()"
+              >
+                {{ hasPassedQuiz ? '✓ Assessment Passed (Retake)' : 'Take Assessment →' }}
+              </button>
+            </div>
+          }
         </div>
+      </aside>
 
-      }
+      <!-- MAIN CONTENT AREA -->
+      <main class="player-content-pane">
 
-      <div class="lesson-actions">
+        <article class="lesson-card">
 
-        @if (progress?.is_completed) {
+          <div class="lesson-header">
+            <div class="lesson-icon">
+              📖
+            </div>
 
-          <div class="completed-status">
-            ✓ Lesson Completed
+            <div>
+              <span class="lesson-label">
+                Lesson {{ lesson.order }} · {{ course?.title || 'Course' }}
+              </span>
+
+              <h1>
+                {{ lesson.title }}
+              </h1>
+            </div>
           </div>
 
-        } @else {
+          <div class="lesson-content">
+            <h2>Lesson Content</h2>
+            <p>
+              {{ lesson.content }}
+            </p>
+          </div>
 
-          <button
-            type="button"
-            class="complete-button"
-            [disabled]="completing"
-            (click)="markAsComplete()"
-          >
+          @if (successMessage) {
+            <div class="success-message">
+              ✓ {{ successMessage }}
+            </div>
+          }
 
-            @if (completing) {
-              Completing...
-            } @else {
-              ✓ Mark as Complete
-            }
+          @if (errorMessage) {
+            <div class="inline-error">
+              {{ errorMessage }}
+            </div>
+          }
 
-          </button>
+          <!-- LESSON ACTIONS & PREV / NEXT NAVIGATION -->
+          <div class="player-action-bar">
 
+            <div class="nav-direction-buttons">
+              <button
+                type="button"
+                class="nav-prev-btn"
+                [disabled]="!previousLesson"
+                (click)="goToPreviousLesson()"
+              >
+                ← Previous
+              </button>
+
+              <button
+                type="button"
+                class="nav-next-btn"
+                [disabled]="!nextLesson"
+                (click)="goToNextLesson()"
+              >
+                Next →
+              </button>
+            </div>
+
+            <div class="complete-action">
+              @if (progress?.is_completed) {
+                <div class="completed-status">
+                  ✓ Lesson Completed
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="complete-button"
+                  [disabled]="completing"
+                  (click)="markAsComplete()"
+                >
+                  @if (completing) {
+                    Completing...
+                  } @else {
+                    ✓ Mark as Complete
+                  }
+                </button>
+              }
+            </div>
+
+          </div>
+
+        </article>
+
+        <!-- CELEBRATION / QUIZ BANNER WHEN ALL LESSONS COMPLETED -->
+        @if (allLessonsCompleted && courseQuiz) {
+          <section class="assessment-cta-banner">
+            <div class="cta-banner-content">
+              <span class="banner-emoji">🎉</span>
+              <div>
+                <h3>All Lessons Completed!</h3>
+                <p>
+                  You have finished every lesson in this course. Take the final assessment to test your knowledge and claim your official certificate.
+                </p>
+              </div>
+            </div>
+            <button type="button" class="cta-quiz-btn" (click)="goToQuiz()">
+              {{ hasPassedQuiz ? 'View / Retake Assessment →' : 'Start Course Assessment →' }}
+            </button>
+          </section>
         }
 
-      </div>
+        <!-- AI LEARNING ASSISTANT PANEL -->
+        <section class="ai-assistant-card">
 
-    </article>
-
-    <!-- AI Learning Assistant Panel -->
-    <section class="ai-assistant-card">
-
-      <div class="ai-header">
-        <div class="ai-header-left">
-          <div class="ai-avatar">🤖</div>
-          <div>
-            <h3>AI Learning Assistant</h3>
-            <p>Ask questions, request summaries, or clarify concepts in this lesson.</p>
+          <div class="ai-header">
+            <div class="ai-header-left">
+              <div class="ai-avatar">🤖</div>
+              <div>
+                <h3>AI Learning Assistant</h3>
+                <p>Ask questions, request summaries, or clarify concepts in this lesson.</p>
+              </div>
+            </div>
+            <div class="ai-badge">TUTOR</div>
           </div>
-        </div>
-        <div class="ai-badge">TUTOR</div>
-      </div>
 
-      <!-- Suggested prompts -->
-      <div class="ai-suggested-prompts">
-        <button
-          type="button"
-          class="prompt-chip"
-          [disabled]="aiLoading"
-          (click)="useSuggestedPrompt('Can you summarize the main concepts of this lesson?')"
-        >
-          💡 Summarize this lesson
-        </button>
-        <button
-          type="button"
-          class="prompt-chip"
-          [disabled]="aiLoading"
-          (click)="useSuggestedPrompt('Can you provide a practical real-world example of this concept?')"
-        >
-          🔍 Practical example
-        </button>
-        <button
-          type="button"
-          class="prompt-chip"
-          [disabled]="aiLoading"
-          (click)="useSuggestedPrompt('What are common mistakes or best practices related to this topic?')"
-        >
-          ⚠️ Best practices & pitfalls
-        </button>
-      </div>
+          <!-- Suggested prompts -->
+          <div class="ai-suggested-prompts">
+            <button
+              type="button"
+              class="prompt-chip"
+              [disabled]="aiLoading"
+              (click)="useSuggestedPrompt('Can you summarize the main concepts of this lesson?')"
+            >
+              💡 Summarize this lesson
+            </button>
+            <button
+              type="button"
+              class="prompt-chip"
+              [disabled]="aiLoading"
+              (click)="useSuggestedPrompt('Can you provide a practical real-world example of this concept?')"
+            >
+              🔍 Practical example
+            </button>
+            <button
+              type="button"
+              class="prompt-chip"
+              [disabled]="aiLoading"
+              (click)="useSuggestedPrompt('What are common mistakes or best practices related to this topic?')"
+            >
+              ⚠️ Best practices & pitfalls
+            </button>
+          </div>
 
-      <!-- Conversation History -->
-      @if (aiMessages.length > 0) {
-        <div class="ai-chat-history">
-          @for (msg of aiMessages; track $index) {
-            <div class="chat-bubble" [ngClass]="msg.sender">
-              <div class="bubble-header">
-                <span class="sender-name">
-                  {{ msg.sender === 'user' ? 'You' : 'SkillSphere AI Tutor' }}
-                </span>
-                <span class="message-time">
-                  {{ msg.timestamp | date:'shortTime' }}
-                </span>
-              </div>
-              <div class="bubble-content">
-                {{ msg.text }}
-              </div>
+          <!-- Conversation History -->
+          @if (aiMessages.length > 0) {
+            <div class="ai-chat-history">
+              @for (msg of aiMessages; track $index) {
+                <div class="chat-bubble" [ngClass]="msg.sender">
+                  <div class="bubble-header">
+                    <span class="sender-name">
+                      {{ msg.sender === 'user' ? 'You' : 'SkillSphere AI Tutor' }}
+                    </span>
+                    <span class="message-time">
+                      {{ msg.timestamp | date:'shortTime' }}
+                    </span>
+                  </div>
+                  <div class="bubble-content">
+                    {{ msg.text }}
+                  </div>
+                </div>
+              }
+
+              @if (aiLoading) {
+                <div class="chat-bubble assistant loading">
+                  <div class="bubble-header">
+                    <span class="sender-name">SkillSphere AI Tutor</span>
+                  </div>
+                  <div class="typing-indicator">
+                    Thinking...
+                  </div>
+                </div>
+              }
             </div>
           }
 
-          @if (aiLoading) {
-            <div class="chat-bubble assistant loading">
-              <div class="bubble-header">
-                <span class="sender-name">SkillSphere AI Tutor</span>
-              </div>
-              <div class="typing-indicator">
+          @if (aiErrorMessage) {
+            <div class="ai-error-banner">
+              ⚠️ {{ aiErrorMessage }}
+            </div>
+          }
+
+          <!-- Question Input Form -->
+          <form class="ai-input-form" (ngSubmit)="askAI()">
+            <input
+              type="text"
+              class="ai-input"
+              placeholder="Ask the AI Tutor a question about this lesson..."
+              [(ngModel)]="aiQuestion"
+              name="aiQuestion"
+              [disabled]="aiLoading"
+            />
+
+            <button
+              type="submit"
+              class="ai-send-button"
+              [disabled]="aiLoading || !aiQuestion.trim()"
+            >
+              @if (aiLoading) {
                 Thinking...
-              </div>
-            </div>
-          }
-        </div>
-      }
+              } @else {
+                Ask Tutor →
+              }
+            </button>
+          </form>
 
-      @if (aiErrorMessage) {
-        <div class="ai-error-banner">
-          ⚠️ {{ aiErrorMessage }}
-        </div>
-      }
+        </section>
 
-      <!-- Question Input Form -->
-      <form class="ai-input-form" (ngSubmit)="askAI()">
-        <input
-          type="text"
-          class="ai-input"
-          placeholder="Ask the AI Tutor a question about this lesson..."
-          [(ngModel)]="aiQuestion"
-          name="aiQuestion"
-          [disabled]="aiLoading"
-        />
+      </main>
 
-        <button
-          type="submit"
-          class="ai-send-button"
-          [disabled]="aiLoading || !aiQuestion.trim()"
-        >
-          @if (aiLoading) {
-            Thinking...
-          } @else {
-            Ask Tutor →
-          }
-        </button>
-      </form>
-
-    </section>
+    </div>
 
   }
 
-</div> 
+</div>

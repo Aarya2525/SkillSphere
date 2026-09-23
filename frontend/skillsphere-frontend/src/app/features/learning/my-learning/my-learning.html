@@ -40,7 +40,7 @@
 
       <button
         type="button"
-        (click)="viewCourse(1)"
+        (click)="goToCourses()"
       >
         Explore Courses
       </button>
@@ -53,7 +53,7 @@
 
       @for (course of learningCourses; track course.enrollment.id) {
 
-        <article class="learning-card">
+        <article class="learning-card course-card">
 
           <div class="course-icon">
             📚

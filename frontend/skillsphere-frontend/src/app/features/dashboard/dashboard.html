@@ -1,618 +1,345 @@
 <div class="dashboard-page">
 
   @if (loading) {
-
     <div class="state-card">
       <div class="state-icon">📊</div>
-
-      <h2>Loading your dashboard...</h2>
-
-      <p>
-        Getting your learning activity ready.
-      </p>
+      <h2>Loading dashboard...</h2>
+      <p>Preparing platform data.</p>
     </div>
-
   }
 
   @if (errorMessage) {
-
     <div class="error-card">
-
       <div class="state-icon">⚠️</div>
-
       <h2>Something went wrong</h2>
-
-      <p>
-        {{ errorMessage }}
-      </p>
-
-      <button
-        type="button"
-        class="primary-button"
-        (click)="loadDashboard()"
-      >
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="primary-button" (click)="loadDashboard()">
         Try Again
       </button>
-
     </div>
-
   }
 
   @if (!loading && !errorMessage && user) {
 
-    <!-- Dashboard Header -->
+    <!-- ============================================================
+         ADMIN PLATFORM CONSOLE
+         ============================================================ -->
+    @if (isAdmin) {
 
-    <header class="dashboard-header">
-
-      <div>
-
-        <span class="page-label">
-          Student Dashboard
-        </span>
-
-        <h1>
-          Welcome back, {{ user.username }} 👋
-        </h1>
-
-        <p>
-          Continue learning, track your progress, and improve your skills.
-        </p>
-
-      </div>
-
-      <button
-        type="button"
-        class="logout-button"
-        (click)="logout()"
-      >
-        Logout
-      </button>
-
-    </header>
-
-
-    <!-- Statistics -->
-
-    <section class="stats-grid">
-
-      <article class="stat-card">
-
-        <div class="stat-icon">
-          📚
-        </div>
-
+      <header class="dashboard-header">
         <div>
-          <strong>
-            {{ enrolledCourseCount }}
-          </strong>
-
-          <span>
-            Enrolled Courses
-          </span>
+          <span class="page-label">Platform Administration</span>
+          <h1>Welcome back, {{ user.username }} 🛡️</h1>
+          <p>Real-time platform oversight, learner activity metrics, and course management.</p>
         </div>
+        <button type="button" class="logout-button" (click)="logout()">Logout</button>
+      </header>
 
-      </article>
+      <section class="stats-grid">
+        <article class="stat-card" (click)="goToCourses()" style="cursor: pointer;">
+          <div class="stat-icon">📚</div>
+          <div>
+            <strong>{{ allCourses.length }}</strong>
+            <span>Platform Courses</span>
+          </div>
+        </article>
 
+        <article class="stat-card">
+          <div class="stat-icon">🎓</div>
+          <div>
+            <strong>{{ enrollments.length }}</strong>
+            <span>Active Enrollments</span>
+          </div>
+        </article>
 
-      <article class="stat-card">
+        <article class="stat-card" (click)="goToQuizzes()" style="cursor: pointer;">
+          <div class="stat-icon">📝</div>
+          <div>
+            <strong>{{ attempts.length }}</strong>
+            <span>Quiz Submissions</span>
+          </div>
+        </article>
 
-        <div class="stat-icon">
-          ✅
-        </div>
+        <article class="stat-card" (click)="goToCertificates()" style="cursor: pointer;">
+          <div class="stat-icon">🏆</div>
+          <div>
+            <strong>{{ allCertificates.length }}</strong>
+            <span>Certificates Issued</span>
+          </div>
+        </article>
 
-        <div>
-          <strong>
-            {{ completedLessonCount }}
-          </strong>
+        <article class="stat-card" (click)="goToReviews()" style="cursor: pointer;">
+          <div class="stat-icon">⭐</div>
+          <div>
+            <strong>{{ allReviews.length }}</strong>
+            <span>Platform Reviews</span>
+          </div>
+        </article>
+      </section>
 
-          <span>
-            Completed Lessons
-          </span>
-        </div>
+      <div class="dashboard-grid">
 
-      </article>
+        <!-- Platform Quick Operations -->
+        <section class="dashboard-card quick-actions-card">
+          <div class="card-header">
+            <div>
+              <span class="section-label">Operations</span>
+              <h2>Platform Management</h2>
+              <p>Direct shortcuts to platform control areas.</p>
+            </div>
+          </div>
 
+          <div class="quick-actions">
+            <button type="button" class="quick-action" (click)="goToCourses()">
+              <span>📚</span>
+              <div>
+                <strong>Manage Courses</strong>
+                <small>Inspect and oversee course catalog</small>
+              </div>
+            </button>
 
-      <article class="stat-card">
+            <button type="button" class="quick-action" (click)="goToQuizzes()">
+              <span>📝</span>
+              <div>
+                <strong>Quiz Assessments</strong>
+                <small>Monitor published quizzes & questions</small>
+              </div>
+            </button>
 
-        <div class="stat-icon">
-          📝
-        </div>
+            <button type="button" class="quick-action" (click)="goToCertificates()">
+              <span>🏆</span>
+              <div>
+                <strong>Certificate Directory</strong>
+                <small>Verify and audit student certificates</small>
+              </div>
+            </button>
 
-        <div>
-          <strong>
-            {{ quizAttemptCount }}
-          </strong>
+            <button type="button" class="quick-action" (click)="goToReviews()">
+              <span>⭐</span>
+              <div>
+                <strong>Learner Reviews</strong>
+                <small>Moderate course feedback and ratings</small>
+              </div>
+            </button>
+          </div>
+        </section>
 
-          <span>
-            Quiz Attempts
-          </span>
-        </div>
+        <!-- Recent Platform Submissions & Monitoring -->
+        <section class="dashboard-card quiz-card">
+          <div class="card-header">
+            <div>
+              <span class="section-label">Monitoring</span>
+              <h2>Recent Assessments</h2>
+              <p>Latest learner quiz attempts submitted.</p>
+            </div>
+          </div>
 
-      </article>
-
-
-      <article class="stat-card">
-
-        <div class="stat-icon">
-          🏆
-        </div>
-
-        <div>
-
-          @if (latestAttempt) {
-
-            <strong>
-              {{ getLatestPercentage() }}%
-            </strong>
-
-            <span>
-              Latest Quiz Score
-            </span>
-
+          @if (attempts.length > 0) {
+            <div class="attempt-list">
+              @for (attempt of attempts.slice(0, 5); track attempt.id) {
+                <article class="attempt-row">
+                  <div class="attempt-icon">📝</div>
+                  <div class="attempt-info">
+                    <h3>{{ attempt.quiz_title }}</h3>
+                    <span>{{ attempt.student_name || 'Student' }} · {{ formatDate(attempt.submitted_at) }}</span>
+                  </div>
+                  <div class="attempt-score">
+                    <strong>{{ attempt.score }}/{{ attempt.total_questions || attempt.answers.length }}</strong>
+                    <span [class]="getScoreClass(attempt)">
+                      {{ attempt.is_passed ? '✓ Passed' : 'Failed' }}
+                    </span>
+                  </div>
+                  <button type="button" class="small-button" (click)="viewAttempt(attempt.id)">View</button>
+                </article>
+              }
+            </div>
           } @else {
-
-            <strong>
-              —
-            </strong>
-
-            <span>
-              Latest Quiz Score
-            </span>
-
+            <div class="empty-section">
+              <div class="empty-icon">📝</div>
+              <h3>No quiz submissions yet</h3>
+              <p>Submissions will appear here in real time.</p>
+            </div>
           }
+        </section>
 
+      </div>
+
+    } @else {
+
+      <!-- ============================================================
+           STUDENT LEARNING DASHBOARD
+           ============================================================ -->
+      <header class="dashboard-header">
+        <div>
+          <span class="page-label">Student Dashboard</span>
+          <h1>Welcome back, {{ user.username }} 👋</h1>
+          <p>Continue learning, track your progress, and improve your skills.</p>
         </div>
+        <button type="button" class="logout-button" (click)="logout()">Logout</button>
+      </header>
 
-      </article>
-
-    </section>
-
-
-    <!-- Main Dashboard -->
-
-    <div class="dashboard-grid">
-
-
-      <!-- My Learning -->
-
-      <section class="dashboard-card learning-card">
-
-        <div class="card-header">
-
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon">📚</div>
           <div>
-
-            <span class="section-label">
-              Learning
-            </span>
-
-            <h2>
-              My Learning
-            </h2>
-
-            <p>
-              Courses you're currently enrolled in.
-            </p>
-
+            <strong>{{ enrolledCourseCount }}</strong>
+            <span>Enrolled Courses</span>
           </div>
+        </article>
 
-          <button
-            type="button"
-            class="text-button"
-            (click)="goToLearning()"
-          >
-            View All →
-          </button>
+        <article class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div>
+            <strong>{{ completedLessonCount }}</strong>
+            <span>Completed Lessons</span>
+          </div>
+        </article>
 
-        </div>
+        <article class="stat-card">
+          <div class="stat-icon">📝</div>
+          <div>
+            <strong>{{ quizAttemptCount }}</strong>
+            <span>Quiz Attempts</span>
+          </div>
+        </article>
 
-
-        @if (enrollments.length > 0) {
-
-          <div class="course-list">
-
-            @for (
-              enrollment of enrollments.slice(0, 4);
-              track enrollment.id
-            ) {
-
-              <article class="course-row">
-
-                <div class="course-icon">
-                  📘
-                </div>
-
-                <div class="course-info">
-
-                  <h3>
-                    {{ enrollment.course_title }}
-                  </h3>
-
-                  <span>
-                    Enrolled {{ formatDate(enrollment.enrolled_at) }}
-                  </span>
-
-                </div>
-
-                <button
-                  type="button"
-                  class="small-button"
-                  (click)="goToLearning()"
-                >
-                  Continue
-                </button>
-
-              </article>
-
+        <article class="stat-card">
+          <div class="stat-icon">🏆</div>
+          <div>
+            @if (latestAttempt) {
+              <strong>{{ getLatestPercentage() }}%</strong>
+              <span>Latest Quiz Score</span>
+            } @else {
+              <strong>—</strong>
+              <span>Latest Quiz Score</span>
             }
-
           </div>
-
-        } @else {
-
-          <div class="empty-section">
-
-            <div class="empty-icon">
-              📚
-            </div>
-
-            <h3>
-              No courses yet
-            </h3>
-
-            <p>
-              Browse available courses and start learning.
-            </p>
-
-            <button
-              type="button"
-              class="primary-button"
-              (click)="goToCourses()"
-            >
-              Browse Courses
-            </button>
-
-          </div>
-
-        }
-
+        </article>
       </section>
 
-
-      <!-- Recent Quiz Attempts -->
-
-      <section class="dashboard-card quiz-card">
-
-        <div class="card-header">
-
-          <div>
-
-            <span class="section-label">
-              Assessment
-            </span>
-
-            <h2>
-              Recent Quiz Attempts
-            </h2>
-
-            <p>
-              Your latest quiz performance.
-            </p>
-
+      <div class="dashboard-grid">
+        <!-- My Learning -->
+        <section class="dashboard-card learning-card">
+          <div class="card-header">
+            <div>
+              <span class="section-label">Learning</span>
+              <h2>My Learning</h2>
+              <p>Courses you're currently enrolled in.</p>
+            </div>
+            <button type="button" class="text-button" (click)="goToLearning()">View All →</button>
           </div>
 
-          <button
-            type="button"
-            class="text-button"
-            (click)="goToQuizzes()"
-          >
-            View All →
+          @if (enrollments.length > 0) {
+            <div class="course-list">
+              @for (enrollment of enrollments.slice(0, 4); track enrollment.id) {
+                <article class="course-row">
+                  <div class="course-icon">📘</div>
+                  <div class="course-info">
+                    <h3>{{ enrollment.course_title }}</h3>
+                    <span>Enrolled {{ formatDate(enrollment.enrolled_at) }}</span>
+                  </div>
+                  <button type="button" class="small-button" (click)="goToLearning()">Continue</button>
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-section">
+              <div class="empty-icon">📚</div>
+              <h3>No courses yet</h3>
+              <p>Browse available courses and start learning.</p>
+              <button type="button" class="primary-button" (click)="goToCourses()">Browse Courses</button>
+            </div>
+          }
+        </section>
+
+        <!-- Recent Quiz Attempts -->
+        <section class="dashboard-card quiz-card">
+          <div class="card-header">
+            <div>
+              <span class="section-label">Assessment</span>
+              <h2>Recent Quiz Attempts</h2>
+              <p>Your latest quiz performance.</p>
+            </div>
+            <button type="button" class="text-button" (click)="goToQuizzes()">View All →</button>
+          </div>
+
+          @if (attempts.length > 0) {
+            <div class="attempt-list">
+              @for (attempt of attempts.slice(0, 4); track attempt.id) {
+                <article class="attempt-row">
+                  <div class="attempt-icon">📝</div>
+                  <div class="attempt-info">
+                    <h3>{{ attempt.quiz_title }}</h3>
+                    <span>{{ formatDate(attempt.submitted_at) }}</span>
+                  </div>
+                  <div class="attempt-score">
+                    <strong>{{ attempt.score }}/{{ attempt.answers.length }}</strong>
+                    <span [class]="getScoreClass(attempt)">
+                      {{ attempt.answers.length > 0 ? ((attempt.score / attempt.answers.length) * 100 | number:'1.0-0') : 0 }}%
+                    </span>
+                  </div>
+                  <button type="button" class="small-button" (click)="viewAttempt(attempt.id)">View</button>
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-section">
+              <div class="empty-icon">📝</div>
+              <h3>No quiz attempts yet</h3>
+              <p>Complete a quiz to start tracking your performance.</p>
+              <button type="button" class="primary-button" (click)="goToQuizzes()">Browse Quizzes</button>
+            </div>
+          }
+        </section>
+      </div>
+
+      <!-- Quick Actions -->
+      <section class="dashboard-card quick-actions-card">
+        <div class="card-header">
+          <div>
+            <span class="section-label">Quick Access</span>
+            <h2>Continue Your Journey</h2>
+            <p>Jump directly into your learning activities.</p>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button type="button" class="quick-action" (click)="goToCourses()">
+            <span>📚</span>
+            <div>
+              <strong>Browse Courses</strong>
+              <small>Explore new topics & modules</small>
+            </div>
           </button>
 
-        </div>
-
-
-        @if (attempts.length > 0) {
-
-          <div class="attempt-list">
-
-            @for (
-              attempt of attempts.slice(0, 4);
-              track attempt.id
-            ) {
-
-              <article class="attempt-row">
-
-                <div class="attempt-icon">
-                  📝
-                </div>
-
-                <div class="attempt-info">
-
-                  <h3>
-                    {{ attempt.quiz_title }}
-                  </h3>
-
-                  <span>
-                    {{ formatDate(attempt.submitted_at) }}
-                  </span>
-
-                </div>
-
-                <div class="attempt-score">
-
-                  <strong>
-                    {{ attempt.score }}/{{ attempt.answers.length }}
-                  </strong>
-
-                  <span
-                    [class]="getScoreClass(attempt)"
-                  >
-                    {{
-                      attempt.answers.length > 0
-                        ? ((attempt.score / attempt.answers.length) * 100 | number:'1.0-0')
-                        : 0
-                    }}%
-                  </span>
-
-                </div>
-
-                <button
-                  type="button"
-                  class="small-button"
-                  (click)="viewAttempt(attempt.id)"
-                >
-                  View
-                </button>
-
-              </article>
-
-            }
-
-          </div>
-
-        } @else {
-
-          <div class="empty-section">
-
-            <div class="empty-icon">
-              📝
+          <button type="button" class="quick-action" (click)="goToLearning()">
+            <span>🎓</span>
+            <div>
+              <strong>My Learning</strong>
+              <small>Continue current lessons</small>
             </div>
+          </button>
 
-            <h3>
-              No quiz attempts yet
-            </h3>
+          <button type="button" class="quick-action" (click)="goToQuizzes()">
+            <span>📝</span>
+            <div>
+              <strong>Take Quizzes</strong>
+              <small>Test your knowledge</small>
+            </div>
+          </button>
 
-            <p>
-              Complete a quiz to start tracking your performance.
-            </p>
-
-            <button
-              type="button"
-              class="primary-button"
-              (click)="goToQuizzes()"
-            >
-              Browse Quizzes
-            </button>
-
-          </div>
-
-        }
-
+          <button type="button" class="quick-action" (click)="goToQuizHistory()">
+            <span>📈</span>
+            <div>
+              <strong>Quiz History</strong>
+              <small>Review past attempts</small>
+            </div>
+          </button>
+        </div>
       </section>
 
-    </div>
-
-
-    <!-- Quick Actions -->
-
-    <section class="dashboard-card quick-actions-card">
-
-      <div class="card-header">
-
-        <div>
-
-          <span class="section-label">
-            Quick Access
-          </span>
-
-          <h2>
-            Continue Your Journey
-          </h2>
-
-          <p>
-            Jump directly into your learning activities.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="quick-actions">
-
-        <button
-          type="button"
-          class="quick-action"
-          (click)="goToCourses()"
-        >
-
-          <span>
-            📚
-          </span>
-
-          <div>
-
-            <strong>
-              Browse Courses
-            </strong>
-
-            <small>
-              Explore available courses
-            </small>
-
-          </div>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="quick-action"
-          (click)="goToLearning()"
-        >
-
-          <span>
-            🎓
-          </span>
-
-          <div>
-
-            <strong>
-              My Learning
-            </strong>
-
-            <small>
-              Continue your courses
-            </small>
-
-          </div>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="quick-action"
-          (click)="goToQuizzes()"
-        >
-
-          <span>
-            📝
-          </span>
-
-          <div>
-
-            <strong>
-              Take a Quiz
-            </strong>
-
-            <small>
-              Test your knowledge
-            </small>
-
-          </div>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="quick-action"
-          (click)="goToQuizHistory()"
-        >
-
-          <span>
-            📈
-          </span>
-
-          <div>
-
-            <strong>
-              Quiz History
-            </strong>
-
-            <small>
-              Review your performance
-            </small>
-
-          </div>
-
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <!-- Account Information -->
-
-    <section class="dashboard-card account-card">
-
-      <div class="card-header">
-
-        <div>
-
-          <span class="section-label">
-            Account
-          </span>
-
-          <h2>
-            Account Information
-          </h2>
-
-        </div>
-
-      </div>
-
-
-      <div class="account-grid">
-
-        <div class="account-item">
-
-          <span>
-            Username
-          </span>
-
-          <strong>
-            {{ user.username }}
-          </strong>
-
-        </div>
-
-
-        <div class="account-item">
-
-          <span>
-            Email
-          </span>
-
-          <strong>
-            {{ user.email }}
-          </strong>
-
-        </div>
-
-
-        <div class="account-item">
-
-          <span>
-            Role
-          </span>
-
-          <strong>
-            {{ user.role }}
-          </strong>
-
-        </div>
-
-
-        <div class="account-item">
-
-          <span>
-            Status
-          </span>
-
-          <strong class="active-status">
-            Active
-          </strong>
-
-        </div>
-
-      </div>
-
-    </section>
+    }
 
   }
 
-</div> 
+</div>
