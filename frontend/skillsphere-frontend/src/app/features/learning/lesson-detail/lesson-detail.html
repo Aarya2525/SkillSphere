@@ -118,6 +118,112 @@
 
     </article>
 
+    <!-- AI Learning Assistant Panel -->
+    <section class="ai-assistant-card">
+
+      <div class="ai-header">
+        <div class="ai-header-left">
+          <div class="ai-avatar">🤖</div>
+          <div>
+            <h3>AI Learning Assistant</h3>
+            <p>Ask questions, request summaries, or clarify concepts in this lesson.</p>
+          </div>
+        </div>
+        <div class="ai-badge">TUTOR</div>
+      </div>
+
+      <!-- Suggested prompts -->
+      <div class="ai-suggested-prompts">
+        <button
+          type="button"
+          class="prompt-chip"
+          [disabled]="aiLoading"
+          (click)="useSuggestedPrompt('Can you summarize the main concepts of this lesson?')"
+        >
+          💡 Summarize this lesson
+        </button>
+        <button
+          type="button"
+          class="prompt-chip"
+          [disabled]="aiLoading"
+          (click)="useSuggestedPrompt('Can you provide a practical real-world example of this concept?')"
+        >
+          🔍 Practical example
+        </button>
+        <button
+          type="button"
+          class="prompt-chip"
+          [disabled]="aiLoading"
+          (click)="useSuggestedPrompt('What are common mistakes or best practices related to this topic?')"
+        >
+          ⚠️ Best practices & pitfalls
+        </button>
+      </div>
+
+      <!-- Conversation History -->
+      @if (aiMessages.length > 0) {
+        <div class="ai-chat-history">
+          @for (msg of aiMessages; track $index) {
+            <div class="chat-bubble" [ngClass]="msg.sender">
+              <div class="bubble-header">
+                <span class="sender-name">
+                  {{ msg.sender === 'user' ? 'You' : 'SkillSphere AI Tutor' }}
+                </span>
+                <span class="message-time">
+                  {{ msg.timestamp | date:'shortTime' }}
+                </span>
+              </div>
+              <div class="bubble-content">
+                {{ msg.text }}
+              </div>
+            </div>
+          }
+
+          @if (aiLoading) {
+            <div class="chat-bubble assistant loading">
+              <div class="bubble-header">
+                <span class="sender-name">SkillSphere AI Tutor</span>
+              </div>
+              <div class="typing-indicator">
+                Thinking...
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (aiErrorMessage) {
+        <div class="ai-error-banner">
+          ⚠️ {{ aiErrorMessage }}
+        </div>
+      }
+
+      <!-- Question Input Form -->
+      <form class="ai-input-form" (ngSubmit)="askAI()">
+        <input
+          type="text"
+          class="ai-input"
+          placeholder="Ask the AI Tutor a question about this lesson..."
+          [(ngModel)]="aiQuestion"
+          name="aiQuestion"
+          [disabled]="aiLoading"
+        />
+
+        <button
+          type="submit"
+          class="ai-send-button"
+          [disabled]="aiLoading || !aiQuestion.trim()"
+        >
+          @if (aiLoading) {
+            Thinking...
+          } @else {
+            Ask Tutor →
+          }
+        </button>
+      </form>
+
+    </section>
+
   }
 
 </div> 

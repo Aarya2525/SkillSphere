@@ -127,4 +127,13 @@ urlpatterns = [
         "notifications/",
         include("notifications.urls"),
     ),
+
+    # ============================================================
+    # AI LEARNING ASSISTANT
+    # ============================================================
+
+    path(
+        "ai/",
+        include("ai_assistant.urls"),
+    ),
 ] 

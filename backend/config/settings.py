@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "certificates",
     "reviews",
     "notifications",
+    "ai_assistant",
 ]
 
 
@@ -203,4 +204,15 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in cors_origins_str.split(",")
     if origin.strip()
-] 
+]
+
+
+# ============================================================
+# AI LEARNING ASSISTANT CONFIGURATION
+# ============================================================
+
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini").strip().lower()
+AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
+AI_MODEL = os.environ.get("AI_MODEL", "gemini-1.5-flash").strip()
+AI_REQUEST_TIMEOUT = int(os.environ.get("AI_REQUEST_TIMEOUT", "30").strip() or 30)
+ 
