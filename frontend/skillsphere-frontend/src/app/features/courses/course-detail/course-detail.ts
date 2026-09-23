@@ -455,9 +455,13 @@ export class CourseDetailComponent
       error: (err) => {
         this.claimingCertificate = false;
         if (err.error?.error) {
-          this.errorMessage = err.error.error;
+          this.errorMessage = typeof err.error.error === 'string'
+            ? err.error.error
+            : (err.error.error.message || err.error.message || err.error.detail || 'Unable to claim certificate.');
         } else {
-          this.errorMessage = 'Unable to claim certificate. Please ensure all lessons are completed and the quiz is passed.';
+          this.errorMessage =
+            err.error?.message || err.error?.detail ||
+            'Unable to claim certificate. Please ensure all lessons are completed and the quiz is passed.';
         }
       }
     });

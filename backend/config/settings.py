@@ -186,6 +186,40 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_THROTTLE_RATES": {
         "ai_assistant": AI_RATE_LIMIT,
+        "anon": os.environ.get("ANON_THROTTLE_RATE", "100/minute"),
+        "user": os.environ.get("USER_THROTTLE_RATE", "1000/minute"),
+    },
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+}
+
+
+# Logging Configuration (Stage 16)
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "skillsphere": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "config.exceptions": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
     },
 }
 

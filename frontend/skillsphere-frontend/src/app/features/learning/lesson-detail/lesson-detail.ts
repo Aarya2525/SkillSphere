@@ -234,7 +234,9 @@ export class LessonDetailComponent implements OnInit {
           this.aiLoading = false;
 
           if (error.error && error.error.error) {
-            this.aiErrorMessage = error.error.error;
+            this.aiErrorMessage = typeof error.error.error === 'string'
+              ? error.error.error
+              : (error.error.error.message || error.error.message || error.error.detail || 'Failed to get response.');
           } else if (error.status === 429) {
             this.aiErrorMessage =
               error.error?.detail ||

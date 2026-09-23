@@ -104,9 +104,12 @@ export class QuizResultComponent implements OnInit {
       error: (err) => {
         this.claimingCertificate = false;
         if (err.error?.error) {
-          this.certificateErrorMessage = err.error.error;
+          this.certificateErrorMessage = typeof err.error.error === 'string'
+            ? err.error.error
+            : (err.error.error.message || err.error.message || err.error.detail || 'Failed to claim certificate.');
         } else {
           this.certificateErrorMessage =
+            err.error?.message || err.error?.detail ||
             'You passed the quiz, but you must complete all lessons (100%) before claiming your certificate.';
         }
       }
