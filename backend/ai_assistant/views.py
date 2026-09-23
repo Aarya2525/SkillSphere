@@ -1,5 +1,6 @@
 """
 API views for the AI Learning Assistant app.
+Hardened with role access controls, context safety boundaries, and rate throttling for Stage 15.
 """
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +19,7 @@ from .serializers import (
     AIAssistantAskResponseSerializer,
 )
 from .services import ask_tutor
+from .throttling import AIAssistantRateThrottle
 
 
 class AIAssistantAskView(APIView):
@@ -25,8 +27,10 @@ class AIAssistantAskView(APIView):
     POST /api/ai/ask/
     Allows authenticated students enrolled in a published course (or authorized instructors/admins)
     to ask contextual questions about a specific lesson to the AI Learning Assistant.
+    Enforces per-user rate throttling, RBAC, and error sanitization.
     """
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AIAssistantRateThrottle]
 
     def post(self, request):
         serializer = AIAssistantAskRequestSerializer(data=request.data)
@@ -81,7 +85,7 @@ class AIAssistantAskView(APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-        # Call AI tutor service
+        # Call AI tutor service with safety handling
         try:
             answer = ask_tutor(lesson, message)
         except AIConfigurationError:

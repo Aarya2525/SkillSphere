@@ -1,6 +1,7 @@
 """
 Google Gemini AI provider implementation using Python standard library urllib.
 Avoids adding external dependencies to the environment.
+Implements header-based authentication and strict secret sanitization.
 """
 import json
 import urllib.error
@@ -19,6 +20,7 @@ class GeminiProvider(BaseAIProvider):
     """
     Concrete AI provider communicating with Google Gemini REST API.
     Uses standard library urllib to avoid extra package dependencies.
+    Passes API key securely via request headers to prevent URL query logging.
     """
 
     def __init__(
@@ -43,6 +45,12 @@ class GeminiProvider(BaseAIProvider):
             else getattr(settings, "AI_REQUEST_TIMEOUT", 30)
         )
 
+    def _sanitize(self, message: str) -> str:
+        """Strip API key or sensitive data from any message."""
+        if self.api_key and self.api_key in message:
+            return message.replace(self.api_key, "[REDACTED]")
+        return message
+
     def generate_response(self, system_instruction: str, prompt: str) -> str:
         if not self.api_key or not self.api_key.strip():
             raise AIConfigurationError(
@@ -51,7 +59,7 @@ class GeminiProvider(BaseAIProvider):
 
         url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model}:generateContent?key={self.api_key}"
+            f"{self.model}:generateContent"
         )
 
         payload = {
@@ -74,7 +82,10 @@ class GeminiProvider(BaseAIProvider):
         req = urllib.request.Request(
             url,
             data=data_bytes,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "x-goog-api-key": self.api_key,
+            },
             method="POST",
         )
 
@@ -83,21 +94,23 @@ class GeminiProvider(BaseAIProvider):
                 status_code = response.getcode()
                 response_body = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
+            sanitized_reason = self._sanitize(str(exc.code))
             raise AIProviderError(
-                f"Gemini API returned HTTP status {exc.code}."
-            ) from exc
+                f"Gemini API returned HTTP status {sanitized_reason}."
+            ) from None
         except urllib.error.URLError as exc:
             if isinstance(exc.reason, TimeoutError):
                 raise AITimeoutError(
                     "Gemini API request timed out."
-                ) from exc
+                ) from None
+            sanitized_reason = self._sanitize(str(exc.reason))
             raise AIProviderError(
-                f"Failed to communicate with Gemini API: {exc.reason}"
-            ) from exc
-        except TimeoutError as exc:
+                f"Failed to communicate with Gemini API: {sanitized_reason}"
+            ) from None
+        except TimeoutError:
             raise AITimeoutError(
                 "Gemini API request timed out."
-            ) from exc
+            ) from None
 
         if status_code != 200:
             raise AIProviderError(
@@ -110,13 +123,21 @@ class GeminiProvider(BaseAIProvider):
             if not candidates:
                 raise AIProviderError("Gemini API returned no candidates.")
 
-            parts = candidates[0].get("content", {}).get("parts", [])
+            candidate = candidates[0]
+            finish_reason = candidate.get("finishReason")
+            if finish_reason == "SAFETY":
+                raise AIProviderError("Gemini response was blocked by safety policy.")
+
+            parts = candidate.get("content", {}).get("parts", [])
             if not parts:
                 raise AIProviderError("Gemini API candidate contained no parts.")
 
             answer = parts[0].get("text", "")
+            if not answer or not answer.strip():
+                raise AIProviderError("Gemini API returned an empty response.")
+
             return answer.strip()
         except (ValueError, KeyError, IndexError) as exc:
             raise AIProviderError(
                 "Failed to parse Gemini API response payload."
-            ) from exc
+            ) from None

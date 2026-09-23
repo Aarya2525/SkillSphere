@@ -175,6 +175,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django REST Framework
 
+AI_RATE_LIMIT = os.environ.get("AI_RATE_LIMIT", "30/minute").strip()
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -182,6 +184,9 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_THROTTLE_RATES": {
+        "ai_assistant": AI_RATE_LIMIT,
+    },
 }
 
 
@@ -208,11 +213,17 @@ CORS_ALLOWED_ORIGINS = [
 
 
 # ============================================================
-# AI LEARNING ASSISTANT CONFIGURATION
+# AI LEARNING ASSISTANT CONFIGURATION (Stage 14 & 15)
 # ============================================================
 
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini").strip().lower()
 AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_MODEL = os.environ.get("AI_MODEL", "gemini-1.5-flash").strip()
 AI_REQUEST_TIMEOUT = int(os.environ.get("AI_REQUEST_TIMEOUT", "30").strip() or 30)
+
+# Stage 15 Context & Safety Limits
+AI_MAX_LESSON_CHARS = int(os.environ.get("AI_MAX_LESSON_CHARS", "15000").strip() or 15000)
+AI_MAX_MESSAGE_CHARS = int(os.environ.get("AI_MAX_MESSAGE_CHARS", "2000").strip() or 2000)
+AI_MAX_RESPONSE_CHARS = int(os.environ.get("AI_MAX_RESPONSE_CHARS", "4000").strip() or 4000)
+
  

@@ -235,6 +235,19 @@ export class LessonDetailComponent implements OnInit {
 
           if (error.error && error.error.error) {
             this.aiErrorMessage = error.error.error;
+          } else if (error.status === 429) {
+            this.aiErrorMessage =
+              error.error?.detail ||
+              'You are asking questions too quickly. Please wait a moment before trying again.';
+          } else if (error.status === 400) {
+            if (error.error?.message) {
+              this.aiErrorMessage = Array.isArray(error.error.message)
+                ? error.error.message.join(' ')
+                : error.error.message;
+            } else {
+              this.aiErrorMessage =
+                'Invalid question submitted. Please check your message.';
+            }
           } else if (error.status === 403) {
             this.aiErrorMessage =
               'You must be enrolled in this course to consult the AI assistant.';
