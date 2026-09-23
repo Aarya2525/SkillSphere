@@ -2,11 +2,13 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from test_utils.base import FAST_HASHERS_OVERRIDE
 from .models import Course, Module, Lesson
 
 User = get_user_model()
 
 
+@FAST_HASHERS_OVERRIDE
 class CourseModuleLessonSecurityTests(APITestCase):
 
     def setUp(self):
@@ -273,3 +275,175 @@ class CourseModuleLessonSecurityTests(APITestCase):
             "order": 99
         })
         self.assertEqual(resp_les.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@FAST_HASHERS_OVERRIDE
+class CourseManagementLifecycleTests(APITestCase):
+    """
+    Stage 17: Comprehensive testing for Course Management, CRUD,
+    publishing lifecycles, and authorization boundaries.
+    """
+
+    def setUp(self):
+        self.instructor1 = User.objects.create_user(
+            username="course_inst1",
+            email="course_inst1@example.com",
+            password="password123",
+            role=User.Role.INSTRUCTOR,
+        )
+        self.instructor2 = User.objects.create_user(
+            username="course_inst2",
+            email="course_inst2@example.com",
+            password="password123",
+            role=User.Role.INSTRUCTOR,
+        )
+        self.student = User.objects.create_user(
+            username="course_student",
+            email="course_student@example.com",
+            password="password123",
+            role=User.Role.STUDENT,
+        )
+        self.admin = User.objects.create_user(
+            username="course_admin",
+            email="course_admin@example.com",
+            password="password123",
+            role=User.Role.ADMIN,
+        )
+
+        self.course1 = Course.objects.create(
+            instructor=self.instructor1,
+            title="Python Fundamentals",
+            description="Learn Python from scratch",
+            is_published=False,
+        )
+
+    # 1. Course creation
+    def test_instructor_can_create_course(self):
+        self.client.force_authenticate(user=self.instructor1)
+        response = self.client.post("/api/courses/", {
+            "title": "Django Deep Dive",
+            "description": "Advanced Django architecture.",
+            "is_published": True,
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["title"], "Django Deep Dive")
+        self.assertEqual(response.data["instructor"], self.instructor1.id)
+
+    # 2. Student cannot create course
+    def test_student_cannot_create_course(self):
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post("/api/courses/", {
+            "title": "Hacked Course",
+            "description": "Unauthorized creation attempt.",
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 3. Course update
+    def test_instructor_can_update_own_course(self):
+        self.client.force_authenticate(user=self.instructor1)
+        response = self.client.patch(f"/api/courses/{self.course1.id}/", {
+            "title": "Python 3.12 Fundamentals Updated",
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "Python 3.12 Fundamentals Updated")
+
+    # 4. Another instructor cannot update course
+    def test_instructor_cannot_update_another_instructors_course(self):
+        self.client.force_authenticate(user=self.instructor2)
+        response = self.client.patch(f"/api/courses/{self.course1.id}/", {
+            "title": "Hijacked Course",
+        })
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # 5. Course delete
+    def test_instructor_can_delete_own_course(self):
+        self.client.force_authenticate(user=self.instructor1)
+        response = self.client.delete(f"/api/courses/{self.course1.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Course.objects.filter(id=self.course1.id).exists())
+
+    # 6. Student cannot delete course
+    def test_student_cannot_delete_course(self):
+        self.course1.is_published = True
+        self.course1.save()
+        self.client.force_authenticate(user=self.student)
+        response = self.client.delete(f"/api/courses/{self.course1.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 7. Publish and unpublish toggle
+    def test_publish_unpublish_course_lifecycle(self):
+        self.client.force_authenticate(user=self.instructor1)
+        # Publish
+        res_pub = self.client.patch(f"/api/courses/{self.course1.id}/", {"is_published": True})
+        self.assertEqual(res_pub.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_pub.data["is_published"])
+
+        # Unpublish
+        res_unpub = self.client.patch(f"/api/courses/{self.course1.id}/", {"is_published": False})
+        self.assertEqual(res_unpub.status_code, status.HTTP_200_OK)
+        self.assertFalse(res_unpub.data["is_published"])
+
+    # 8. Unpublished course visibility
+    def test_unpublished_course_visibility_boundaries(self):
+        # Owner can view
+        self.client.force_authenticate(user=self.instructor1)
+        self.assertEqual(self.client.get(f"/api/courses/{self.course1.id}/").status_code, status.HTTP_200_OK)
+
+        # Admin can view
+        self.client.force_authenticate(user=self.admin)
+        self.assertEqual(self.client.get(f"/api/courses/{self.course1.id}/").status_code, status.HTTP_200_OK)
+
+        # Another instructor cannot view (404)
+        self.client.force_authenticate(user=self.instructor2)
+        self.assertEqual(self.client.get(f"/api/courses/{self.course1.id}/").status_code, status.HTTP_404_NOT_FOUND)
+
+        # Student cannot view (404)
+        self.client.force_authenticate(user=self.student)
+        self.assertEqual(self.client.get(f"/api/courses/{self.course1.id}/").status_code, status.HTTP_404_NOT_FOUND)
+
+    # 9. Module and Lesson creation by owner
+    def test_instructor_can_create_module_and_lesson(self):
+        self.client.force_authenticate(user=self.instructor1)
+        res_mod = self.client.post("/api/courses/modules/", {
+            "course": self.course1.id,
+            "title": "Module 1",
+            "order": 1,
+        })
+        self.assertEqual(res_mod.status_code, status.HTTP_201_CREATED)
+        module_id = res_mod.data["id"]
+
+        res_les = self.client.post("/api/courses/lessons/", {
+            "module": module_id,
+            "title": "Lesson 1",
+            "content": "Lesson content here.",
+            "order": 1,
+        })
+        self.assertEqual(res_les.status_code, status.HTTP_201_CREATED)
+
+    # 10. Instructor cannot add module to another instructor's course
+    def test_instructor_cannot_add_module_to_another_instructors_course(self):
+        self.client.force_authenticate(user=self.instructor2)
+        response = self.client.post("/api/courses/modules/", {
+            "course": self.course1.id,
+            "title": "Intruder Module",
+            "order": 1,
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 11. Invalid IDs return 404
+    def test_invalid_course_module_lesson_ids_return_404(self):
+        self.client.force_authenticate(user=self.instructor1)
+        self.assertEqual(self.client.get("/api/courses/999999/").status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get("/api/courses/modules/999999/").status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get("/api/courses/lessons/999999/").status_code, status.HTTP_404_NOT_FOUND)
+
+    # 12. Serializer validation
+    def test_course_serializer_validation_empty_title(self):
+        self.client.force_authenticate(user=self.instructor1)
+        response = self.client.post("/api/courses/", {
+            "title": "",
+            "description": "Valid description.",
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
+        self.assertEqual(response.data["error"]["code"], "validation_error")

@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from test_utils.base import FAST_HASHERS_OVERRIDE
 from certificates.models import Certificate
 from courses.models import Course, Module, Lesson
 from enrollments.models import Enrollment
@@ -11,6 +12,7 @@ from quizzes.models import Quiz, Question, Option, QuizAttempt
 User = get_user_model()
 
 
+@FAST_HASHERS_OVERRIDE
 class QuizSystemTests(APITestCase):
 
     def setUp(self):
@@ -421,3 +423,100 @@ class QuizSystemTests(APITestCase):
         self.client.force_authenticate(user=self.instructor1)
         resp = self.client.get("/api/certificates/my/")
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@FAST_HASHERS_OVERRIDE
+class QuizAdvancedLifecycleTests(APITestCase):
+    """
+    Stage 17: Additional quiz lifecycle tests for student restrictions,
+    question/option creation scoping, and score edge cases.
+    """
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username="quiz_adv_inst",
+            email="quiz_adv_inst@example.com",
+            password="password123",
+            role=User.Role.INSTRUCTOR,
+        )
+        self.other_instructor = User.objects.create_user(
+            username="quiz_adv_other",
+            email="quiz_adv_other@example.com",
+            password="password123",
+            role=User.Role.INSTRUCTOR,
+        )
+        self.student = User.objects.create_user(
+            username="quiz_adv_student",
+            email="quiz_adv_student@example.com",
+            password="password123",
+            role=User.Role.STUDENT,
+        )
+
+        self.course = Course.objects.create(
+            instructor=self.instructor,
+            title="Quiz Testing Course",
+            is_published=True,
+        )
+        self.quiz = Quiz.objects.create(
+            course=self.course,
+            title="Advanced Lifecycle Quiz",
+            passing_score=60,
+            is_published=False,
+        )
+
+    # 1. Student cannot create quizzes
+    def test_student_cannot_create_quiz(self):
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post("/api/quizzes/", {
+            "course": self.course.id,
+            "title": "Malicious Quiz",
+            "passing_score": 50,
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 2. Instructor can create questions and options for own quiz
+    def test_instructor_creates_question_and_option_for_own_quiz(self):
+        self.client.force_authenticate(user=self.instructor)
+        resp_q = self.client.post("/api/quizzes/questions/", {
+            "quiz": self.quiz.id,
+            "text": "What is 2+2?",
+        })
+        self.assertEqual(resp_q.status_code, status.HTTP_201_CREATED)
+        question_id = resp_q.data["id"]
+
+        resp_opt = self.client.post("/api/quizzes/options/", {
+            "question": question_id,
+            "text": "4",
+            "is_correct": True,
+        })
+        self.assertEqual(resp_opt.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp_opt.data["text"], "4")
+
+    # 3. Instructor cannot create question for another instructor's quiz
+    def test_instructor_cannot_create_question_for_other_instructors_quiz(self):
+        self.client.force_authenticate(user=self.other_instructor)
+        response = self.client.post("/api/quizzes/questions/", {
+            "quiz": self.quiz.id,
+            "text": "Intruder Question",
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 4. Zero score submission produces 0% and failed status
+    def test_quiz_zero_score_submission(self):
+        Enrollment.objects.create(student=self.student, course=self.course)
+        self.quiz.is_published = True
+        self.quiz.save()
+
+        q = Question.objects.create(quiz=self.quiz, text="Q1")
+        Option.objects.create(question=q, text="Correct", is_correct=True)
+        opt_wrong = Option.objects.create(question=q, text="Wrong", is_correct=False)
+
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post(f"/api/quizzes/student/{self.quiz.id}/submit/", {
+            "answers": [{"question": q.id, "selected_option": opt_wrong.id}]
+        }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["score"], 0)
+        self.assertEqual(response.data["percentage"], 0)
+        self.assertFalse(response.data["is_passed"])

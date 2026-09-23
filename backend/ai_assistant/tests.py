@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from courses.models import Course, Module, Lesson
 from enrollments.models import Enrollment
+from test_utils.base import FAST_HASHERS_OVERRIDE
 from .providers.base import (
     AIConfigurationError,
     AIProviderError,
@@ -30,6 +31,7 @@ from .services import (
 User = get_user_model()
 
 
+@FAST_HASHERS_OVERRIDE
 class AIAssistantSecurityAndSafetyTests(TestCase):
     """
     Validates authentication, authorization, prompt injection defenses,

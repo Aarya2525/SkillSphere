@@ -1,18 +1,34 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { Router } from '@angular/router';
 
-import { Notifications } from './notifications';
+import { NotificationsComponent } from './notifications';
+import { NotificationService } from '../../../core/services/notification';
 
-describe('Notifications', () => {
-  let component: Notifications;
-  let fixture: ComponentFixture<Notifications>;
+describe('NotificationsComponent', () => {
+  let component: NotificationsComponent;
+  let fixture: ComponentFixture<NotificationsComponent>;
+  let mockNotificationService: jasmine.SpyObj<NotificationService>;
+  let mockRouter: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [Notifications]
-    })
-    .compileComponents();
+    mockNotificationService = jasmine.createSpyObj('NotificationService', [
+      'getNotifications',
+      'markAsRead',
+      'markAllAsRead'
+    ]);
+    mockNotificationService.getNotifications.and.returnValue(of([]));
+    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
-    fixture = TestBed.createComponent(Notifications);
+    await TestBed.configureTestingModule({
+      imports: [NotificationsComponent],
+      providers: [
+        { provide: NotificationService, useValue: mockNotificationService },
+        { provide: Router, useValue: mockRouter }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(NotificationsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

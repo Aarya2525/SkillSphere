@@ -27,6 +27,7 @@ from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from test_utils.base import FAST_HASHERS_OVERRIDE
 from ai_assistant.providers.base import (
     AIConfigurationError,
     AIProviderError,
@@ -88,6 +89,7 @@ class MockAIErrorView(APIView):
         raise AIProviderError("Gemini 500 error.")
 
 
+@FAST_HASHERS_OVERRIDE
 class CentralizedAPIErrorHandlingTests(TestCase):
     """
     Validates the centralized exception handler and API error consistency.
@@ -298,3 +300,171 @@ class CentralizedAPIErrorHandlingTests(TestCase):
             resp_str = str(resp.data)
             for secret in sensitive_tokens:
                 self.assertNotIn(secret, resp_str)
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class AuthenticationAndRBACTests(TestCase):
+    """
+    Stage 17: Comprehensive testing for Authentication and Role-Based Access Control.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.client = APIClient()
+
+        self.student = User.objects.create_user(
+            username="auth_student",
+            email="auth_student@example.com",
+            password="StudentPassword123!",
+            role=User.Role.STUDENT,
+        )
+        self.instructor = User.objects.create_user(
+            username="auth_instructor",
+            email="auth_instructor@example.com",
+            password="InstructorPassword123!",
+            role=User.Role.INSTRUCTOR,
+        )
+        self.admin = User.objects.create_user(
+            username="auth_admin",
+            email="auth_admin@example.com",
+            password="AdminPassword123!",
+            role=User.Role.ADMIN,
+        )
+
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        return str(refresh.access_token)
+
+    # 1. Student registration
+    def test_student_registration_success(self):
+        payload = {
+            "username": "new_student",
+            "email": "new_student@example.com",
+            "password": "ValidPassword123!",
+        }
+        response = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["username"], "new_student")
+        self.assertEqual(response.data["email"], "new_student@example.com")
+        self.assertNotIn("password", response.data)
+
+        created_user = User.objects.get(username="new_student")
+        self.assertEqual(created_user.role, User.Role.STUDENT)
+        self.assertTrue(created_user.check_password("ValidPassword123!"))
+
+    # 2. Instructor registration privilege protection
+    def test_registration_ignores_role_escalation_attempt(self):
+        payload = {
+            "username": "escalation_user",
+            "email": "escalation@example.com",
+            "password": "ValidPassword123!",
+            "role": "INSTRUCTOR",
+        }
+        response = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        created_user = User.objects.get(username="escalation_user")
+        self.assertEqual(created_user.role, User.Role.STUDENT)
+
+    def test_registration_ignores_admin_role_escalation_attempt(self):
+        payload = {
+            "username": "escalation_admin",
+            "email": "escalation_admin@example.com",
+            "password": "ValidPassword123!",
+            "role": "ADMIN",
+        }
+        response = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        created_user = User.objects.get(username="escalation_admin")
+        self.assertEqual(created_user.role, User.Role.STUDENT)
+
+    # 3. Login success
+    def test_login_success_returns_jwt_tokens(self):
+        payload = {
+            "username": "auth_student",
+            "password": "StudentPassword123!",
+        }
+        response = self.client.post("/api/auth/token/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+
+    # 4. Invalid login
+    def test_login_invalid_password_fails(self):
+        payload = {
+            "username": "auth_student",
+            "password": "WrongPassword123!",
+        }
+        response = self.client.post("/api/auth/token/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_nonexistent_user_fails(self):
+        payload = {
+            "username": "ghost_user",
+            "password": "AnyPassword123!",
+        }
+        response = self.client.post("/api/auth/token/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # 5. JWT token refresh
+    def test_jwt_token_refresh_lifecycle(self):
+        refresh = RefreshToken.for_user(self.student)
+        payload = {"refresh": str(refresh)}
+        response = self.client.post("/api/auth/token/refresh/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+
+    def test_jwt_token_refresh_with_invalid_token_fails(self):
+        payload = {"refresh": "invalid.refresh.token"}
+        response = self.client.post("/api/auth/token/refresh/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # 6. /auth/me authorization
+    def test_current_user_me_authenticated(self):
+        token = self._get_token(self.student)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        response = self.client.get("/api/auth/me/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.student.id)
+        self.assertEqual(response.data["username"], "auth_student")
+        self.assertEqual(response.data["email"], "auth_student@example.com")
+        self.assertEqual(response.data["role"], User.Role.STUDENT)
+
+    # 7. Unauthenticated protected endpoint
+    def test_current_user_me_unauthenticated_fails(self):
+        response = self.client.get("/api/auth/me/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # 8. Invalid/expired token behavior
+    def test_invalid_bearer_token_fails(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer garbage_token_xyz")
+        response = self.client.get("/api/auth/me/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # 9. Student role behavior
+    def test_student_role_authorization_matrix(self):
+        token = self._get_token(self.student)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        self.assertEqual(self.client.get("/api/student-test/").status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.get("/api/instructor-test/").status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get("/api/admin-test/").status_code, status.HTTP_403_FORBIDDEN)
+
+    # 10. Instructor role behavior
+    def test_instructor_role_authorization_matrix(self):
+        token = self._get_token(self.instructor)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        self.assertEqual(self.client.get("/api/instructor-test/").status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.get("/api/student-test/").status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get("/api/admin-test/").status_code, status.HTTP_403_FORBIDDEN)
+
+    # 11. Admin role behavior
+    def test_admin_role_authorization_matrix(self):
+        token = self._get_token(self.admin)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        self.assertEqual(self.client.get("/api/admin-test/").status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.get("/api/student-test/").status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get("/api/instructor-test/").status_code, status.HTTP_403_FORBIDDEN)
