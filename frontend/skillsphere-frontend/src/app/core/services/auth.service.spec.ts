@@ -72,4 +72,19 @@ describe('AuthService', () => {
     expect(service.getCurrentUserSnapshot()).toBeNull();
     expect(service.isLoggedIn()).toBeFalse();
   });
+
+  it('refreshToken should post refresh token and store new access token', () => {
+    localStorage.setItem('skillsphere_refresh_token', 'valid_refresh_token');
+
+    service.refreshToken().subscribe(res => {
+      expect(res.access).toBe('new_access_token_456');
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/token/refresh/`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ refresh: 'valid_refresh_token' });
+    req.flush({ access: 'new_access_token_456' });
+
+    expect(service.getAccessToken()).toBe('new_access_token_456');
+  });
 });

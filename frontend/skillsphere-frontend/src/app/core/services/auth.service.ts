@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface LoginRequest {
@@ -31,141 +31,81 @@ export interface User {
   providedIn: 'root'
 })
 export class AuthService {
-
   private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly accessTokenKey = 'skillsphere_access_token';
+  private readonly refreshTokenKey = 'skillsphere_refresh_token';
+  private readonly currentUserKey = 'skillsphere_current_user';
 
-  private readonly apiUrl =
-    `${environment.apiUrl}/auth`;
-
-  private readonly accessTokenKey =
-    'skillsphere_access_token';
-
-  private readonly refreshTokenKey =
-    'skillsphere_refresh_token';
-
-  private readonly currentUserKey =
-    'skillsphere_current_user';
-
-
-  login(
-    data: LoginRequest
-  ): Observable<LoginResponse> {
-
+  login(data: LoginRequest): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(
-        `${this.apiUrl}/token/`,
-        data
-      )
+      .post<LoginResponse>(`${this.apiUrl}/token/`, data)
       .pipe(
         tap(response => {
-
-          localStorage.setItem(
-            this.accessTokenKey,
-            response.access
-          );
-
-          localStorage.setItem(
-            this.refreshTokenKey,
-            response.refresh
-          );
-
+          localStorage.setItem(this.accessTokenKey, response.access);
+          localStorage.setItem(this.refreshTokenKey, response.refresh);
         })
       );
   }
 
-
-  register(
-    data: RegisterRequest
-  ): Observable<User> {
-
-    return this.http.post<User>(
-      `${this.apiUrl}/register/`,
-      data
-    );
+  register(data: RegisterRequest): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/register/`, data);
   }
-
 
   getCurrentUser(): Observable<User> {
-
     return this.http
-      .get<User>(
-        `${this.apiUrl}/me/`
-      )
+      .get<User>(`${this.apiUrl}/me/`)
       .pipe(
         tap(user => {
-
-          localStorage.setItem(
-            this.currentUserKey,
-            JSON.stringify(user)
-          );
-
+          localStorage.setItem(this.currentUserKey, JSON.stringify(user));
         })
       );
   }
 
-
   getCurrentUserSnapshot(): User | null {
-
-    const storedUser =
-      localStorage.getItem(
-        this.currentUserKey
-      );
-
+    const storedUser = localStorage.getItem(this.currentUserKey);
     if (!storedUser) {
       return null;
     }
 
     try {
-
-      return JSON.parse(
-        storedUser
-      ) as User;
-
+      return JSON.parse(storedUser) as User;
     } catch {
-
-      localStorage.removeItem(
-        this.currentUserKey
-      );
-
+      localStorage.removeItem(this.currentUserKey);
       return null;
     }
   }
 
-
   getAccessToken(): string | null {
-
-    return localStorage.getItem(
-      this.accessTokenKey
-    );
+    return localStorage.getItem(this.accessTokenKey);
   }
-
 
   getRefreshToken(): string | null {
-
-    return localStorage.getItem(
-      this.refreshTokenKey
-    );
+    return localStorage.getItem(this.refreshTokenKey);
   }
 
-
   isLoggedIn(): boolean {
-
     return !!this.getAccessToken();
   }
 
-
   logout(): void {
-
-    localStorage.removeItem(
-      this.accessTokenKey
-    );
-
-    localStorage.removeItem(
-      this.refreshTokenKey
-    );
-
-    localStorage.removeItem(
-      this.currentUserKey
-    );
+    localStorage.removeItem(this.accessTokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+    localStorage.removeItem(this.currentUserKey);
   }
-} 
+
+  refreshToken(): Observable<{ access: string }> {
+    const refresh = this.getRefreshToken();
+    if (!refresh) {
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    return this.http
+      .post<{ access: string }>(`${this.apiUrl}/token/refresh/`, { refresh })
+      .pipe(
+        tap(response => {
+          localStorage.setItem(this.accessTokenKey, response.access);
+        })
+      );
+  }
+}

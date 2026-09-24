@@ -276,6 +276,32 @@ class CourseModuleLessonSecurityTests(APITestCase):
         })
         self.assertEqual(resp_les.status_code, status.HTTP_403_FORBIDDEN)
 
+    # ============================================================
+    # I: STAGE 18 SECURITY: CROSS-INSTRUCTOR IDOR PROTECTION
+    # ============================================================
+
+    def test_instructor_cannot_move_module_to_another_instructors_course(self):
+        self.client.force_authenticate(user=self.instructor1)
+        response = self.client.patch(
+            f"/api/courses/modules/{self.pub_module_inst1.id}/",
+            {"course": self.course_inst2.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.pub_module_inst1.refresh_from_db()
+        self.assertEqual(self.pub_module_inst1.course_id, self.pub_course_inst1.id)
+
+    def test_instructor_cannot_move_lesson_to_another_instructors_module(self):
+        self.client.force_authenticate(user=self.instructor1)
+        response = self.client.patch(
+            f"/api/courses/lessons/{self.pub_lesson_inst1.id}/",
+            {"module": self.module_inst2.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.pub_lesson_inst1.refresh_from_db()
+        self.assertEqual(self.pub_lesson_inst1.module_id, self.pub_module_inst1.id)
+
 
 @FAST_HASHERS_OVERRIDE
 class CourseManagementLifecycleTests(APITestCase):

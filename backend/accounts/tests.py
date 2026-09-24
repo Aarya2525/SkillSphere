@@ -468,3 +468,30 @@ class AuthenticationAndRBACTests(TestCase):
         self.assertEqual(self.client.get("/api/admin-test/").status_code, status.HTTP_200_OK)
         self.assertEqual(self.client.get("/api/student-test/").status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.client.get("/api/instructor-test/").status_code, status.HTTP_403_FORBIDDEN)
+
+    # 12. Stage 18 Security: Password validation on registration
+    def test_registration_rejects_common_and_numeric_passwords(self):
+        payload_numeric = {
+            "username": "weak_numeric_user",
+            "email": "weak_numeric@example.com",
+            "password": "12345678",
+        }
+        res_numeric = self.client.post("/api/auth/register/", payload_numeric, format="json")
+        self.assertEqual(res_numeric.status_code, status.HTTP_400_BAD_REQUEST)
+
+        payload_common = {
+            "username": "weak_common_user",
+            "email": "weak_common@example.com",
+            "password": "password",
+        }
+        res_common = self.client.post("/api/auth/register/", payload_common, format="json")
+        self.assertEqual(res_common.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_registration_rejects_too_short_passwords(self):
+        payload_short = {
+            "username": "short_pw_user",
+            "email": "short_pw@example.com",
+            "password": "short",
+        }
+        res_short = self.client.post("/api/auth/register/", payload_short, format="json")
+        self.assertEqual(res_short.status_code, status.HTTP_400_BAD_REQUEST)

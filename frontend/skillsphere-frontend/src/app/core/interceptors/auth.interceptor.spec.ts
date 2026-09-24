@@ -42,4 +42,24 @@ describe('authInterceptor', () => {
     expect(req.request.headers.has('Authorization')).toBeFalse();
     req.flush({});
   });
+
+  it('should clear stored credentials on 401 unauthorized response', () => {
+    localStorage.setItem('skillsphere_access_token', 'expired_token');
+    localStorage.setItem('skillsphere_refresh_token', 'expired_refresh');
+    localStorage.setItem('skillsphere_current_user', JSON.stringify({ id: 1 }));
+
+    httpClient.get('/api/protected/').subscribe({
+      next: () => fail('should have failed with 401'),
+      error: (err) => {
+        expect(err.status).toBe(401);
+      }
+    });
+
+    const req = httpMock.expectOne('/api/protected/');
+    req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+    expect(localStorage.getItem('skillsphere_access_token')).toBeNull();
+    expect(localStorage.getItem('skillsphere_refresh_token')).toBeNull();
+    expect(localStorage.getItem('skillsphere_current_user')).toBeNull();
+  });
 });

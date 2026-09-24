@@ -520,3 +520,57 @@ class QuizAdvancedLifecycleTests(APITestCase):
         self.assertEqual(response.data["score"], 0)
         self.assertEqual(response.data["percentage"], 0)
         self.assertFalse(response.data["is_passed"])
+
+    # 5. Stage 18 Security: Cross-instructor IDOR protection on quiz and question updates
+    def test_instructor_cannot_reassign_question_to_another_instructors_quiz(self):
+        other_instructor = User.objects.create_user(
+            username="other_quiz_inst",
+            email="other_quiz_inst@example.com",
+            password="password123",
+            role=User.Role.INSTRUCTOR,
+        )
+        other_course = Course.objects.create(
+            instructor=other_instructor,
+            title="Other Course",
+            is_published=True,
+        )
+        other_quiz = Quiz.objects.create(
+            course=other_course,
+            title="Other Quiz",
+            passing_score=70,
+        )
+
+        q = Question.objects.create(quiz=self.quiz, text="Original Question")
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.patch(
+            f"/api/quizzes/questions/{q.id}/",
+            {"quiz": other_quiz.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        q.refresh_from_db()
+        self.assertEqual(q.quiz_id, self.quiz.id)
+
+    def test_instructor_cannot_reassign_quiz_to_another_instructors_course(self):
+        other_instructor = User.objects.create_user(
+            username="other_quiz_inst2",
+            email="other_quiz_inst2@example.com",
+            password="password123",
+            role=User.Role.INSTRUCTOR,
+        )
+        other_course = Course.objects.create(
+            instructor=other_instructor,
+            title="Other Course 2",
+            is_published=True,
+        )
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.patch(
+            f"/api/quizzes/{self.quiz.id}/",
+            {"course": other_course.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.quiz.refresh_from_db()
+        self.assertEqual(self.quiz.course_id, self.course.id)

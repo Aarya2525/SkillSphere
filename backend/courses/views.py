@@ -126,7 +126,18 @@ class ModuleDetailView(generics.RetrieveUpdateDestroyAPIView):
                 "Only instructors and admins can update modules."
             )
 
+        if "course" in serializer.validated_data:
+            target_course = serializer.validated_data["course"]
+            if (
+                self.request.user.role != "ADMIN"
+                and target_course.instructor != self.request.user
+            ):
+                raise PermissionDenied(
+                    "You cannot move a module to a course you do not own."
+                )
+
         serializer.save()
+
 
     def perform_destroy(self, instance):
         if self.request.user.role not in ["INSTRUCTOR", "ADMIN"]:
@@ -204,6 +215,16 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied(
                 "Only instructors and admins can update lessons."
             )
+
+        if "module" in serializer.validated_data:
+            target_module = serializer.validated_data["module"]
+            if (
+                self.request.user.role != "ADMIN"
+                and target_module.course.instructor != self.request.user
+            ):
+                raise PermissionDenied(
+                    "You cannot move a lesson to a module you do not own."
+                )
 
         serializer.save()
 

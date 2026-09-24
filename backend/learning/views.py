@@ -80,6 +80,11 @@ class LessonProgressDetailView(generics.RetrieveUpdateDestroyAPIView):
                 "Only students can update lesson progress."
             )
 
+        if "lesson" in serializer.validated_data and serializer.validated_data["lesson"] != serializer.instance.lesson:
+            raise PermissionDenied(
+                "You cannot change the lesson of an existing progress record."
+            )
+
         is_completed = serializer.validated_data.get(
             "is_completed",
             serializer.instance.is_completed,
@@ -93,6 +98,7 @@ class LessonProgressDetailView(generics.RetrieveUpdateDestroyAPIView):
             serializer.save(
                 completed_at=None,
             )
+
 
     def perform_destroy(self, instance):
         user = self.request.user

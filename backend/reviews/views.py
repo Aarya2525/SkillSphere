@@ -113,7 +113,13 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
                 "Only students can update reviews."
             )
 
+        if "course" in serializer.validated_data and serializer.validated_data["course"] != review.course:
+            raise PermissionDenied(
+                "You cannot change the course of an existing review."
+            )
+
         serializer.save()
+
 
     def perform_destroy(self, instance):
         student = self.request.user

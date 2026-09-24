@@ -260,4 +260,38 @@ AI_MAX_LESSON_CHARS = int(os.environ.get("AI_MAX_LESSON_CHARS", "15000").strip()
 AI_MAX_MESSAGE_CHARS = int(os.environ.get("AI_MAX_MESSAGE_CHARS", "2000").strip() or 2000)
 AI_MAX_RESPONSE_CHARS = int(os.environ.get("AI_MAX_RESPONSE_CHARS", "4000").strip() or 4000)
 
+
+# ============================================================
+# SECURITY HEADERS & PRODUCTION HARDENING (Stage 18)
+# ============================================================
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+
+SECURE_SSL_REDIRECT = os.environ.get(
+    "SECURE_SSL_REDIRECT", "False"
+).strip().lower() in ("true", "1")
+
+SESSION_COOKIE_SECURE = os.environ.get(
+    "SESSION_COOKIE_SECURE", "False"
+).strip().lower() in ("true", "1")
+
+CSRF_COOKIE_SECURE = os.environ.get(
+    "CSRF_COOKIE_SECURE", "False"
+).strip().lower() in ("true", "1")
+
+SECURE_HSTS_SECONDS = int(
+    os.environ.get("SECURE_HSTS_SECONDS", "0")
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS", "False"
+).strip().lower() in ("true", "1")
+SECURE_HSTS_PRELOAD = os.environ.get(
+    "SECURE_HSTS_PRELOAD", "False"
+).strip().lower() in ("true", "1")
+
  

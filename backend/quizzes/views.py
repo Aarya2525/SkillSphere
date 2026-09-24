@@ -137,6 +137,13 @@ class QuizDetailView(generics.RetrieveUpdateDestroyAPIView):
                 "You can only update quizzes for your own courses."
             )
 
+        if "course" in serializer.validated_data:
+            target_course = serializer.validated_data["course"]
+            if user.role != "ADMIN" and target_course.instructor != user:
+                raise PermissionDenied(
+                    "You cannot move a quiz to a course you do not own."
+                )
+
         target_published = serializer.validated_data.get(
             "is_published",
             quiz.is_published,
@@ -238,6 +245,13 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
                 "You can only update questions for your own quizzes."
             )
 
+        if "quiz" in serializer.validated_data:
+            target_quiz = serializer.validated_data["quiz"]
+            if user.role != "ADMIN" and target_quiz.course.instructor != user:
+                raise PermissionDenied(
+                    "You cannot move a question to a quiz you do not own."
+                )
+
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -330,6 +344,13 @@ class OptionDetailView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied(
                 "You can only update options for your own quizzes."
             )
+
+        if "question" in serializer.validated_data:
+            target_question = serializer.validated_data["question"]
+            if user.role != "ADMIN" and target_question.quiz.course.instructor != user:
+                raise PermissionDenied(
+                    "You cannot move an option to a question you do not own."
+                )
 
         serializer.save()
 
