@@ -112,4 +112,16 @@ describe('DashboardComponent - Regression Tests', () => {
     expect(mockCourseService.getCourses).not.toHaveBeenCalled();
     expect(mockCertificateService.getCertificates).not.toHaveBeenCalled();
   });
+
+  it('should render all 5 platform metric cards in the admin stats grid without orphan slots', () => {
+    mockAuthService.getCurrentUserSnapshot.and.returnValue(adminUser);
+    mockAuthService.getCurrentUser.and.returnValue(of(adminUser));
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const statCards = fixture.nativeElement.querySelectorAll('.stats-grid .stat-card');
+    expect(statCards.length).toBe(5);
+  });
 });

@@ -49,17 +49,33 @@
       </div>
     </header>
 
+    <!-- MOBILE CURRICULUM BACKDROP OVERLAY -->
+    @if (sidebarOpen) {
+      <div
+        class="curriculum-backdrop"
+        (click)="closeSidebar()"
+        aria-hidden="true"
+      ></div>
+    }
+
     <!-- MAIN TWO-COLUMN PLAYER LAYOUT -->
     <div class="player-layout">
 
       <!-- CURRICULUM SIDEBAR -->
-      <aside class="curriculum-sidebar" [class.open]="sidebarOpen">
+      <aside class="curriculum-sidebar" [class.open]="sidebarOpen" aria-label="Course curriculum">
         <div class="sidebar-head">
           <div class="sidebar-title">
             <span>📚 Course Curriculum</span>
             <span class="count-badge">{{ courseLessons.length }} Lessons</span>
           </div>
-          <button type="button" class="close-sidebar-btn" (click)="toggleSidebar()">✕</button>
+          <button
+            type="button"
+            class="close-sidebar-btn"
+            (click)="closeSidebar()"
+            aria-label="Close curriculum sidebar"
+          >
+            ✕
+          </button>
         </div>
 
         <div class="curriculum-modules-list">
@@ -143,9 +159,7 @@
 
           <div class="lesson-content">
             <h2>Lesson Content</h2>
-            <p>
-              {{ lesson.content }}
-            </p>
+            <div class="lesson-content-body" [innerHTML]="lesson.content | safeContent"></div>
           </div>
 
           @if (successMessage) {

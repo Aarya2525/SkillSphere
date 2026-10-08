@@ -823,6 +823,24 @@
   }
 }
 
+.curriculum-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ============================================================
  * RESPONSIVE BREAKPOINTS
  * ============================================================ */
@@ -837,7 +855,7 @@
   }
 
   .curriculum-sidebar {
-    display: none;
+    display: flex;
     position: fixed;
     top: 0;
     left: 0;
@@ -845,15 +863,23 @@
     height: 100vh;
     max-height: 100vh;
     z-index: 1000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
     border-radius: 0;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
+    visibility: hidden;
 
     &.open {
-      display: flex;
+      transform: translateX(0);
+      visibility: visible;
     }
 
     .close-sidebar-btn {
-      display: block;
+      display: grid;
+      place-items: center;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 18px;
     }
   }
 

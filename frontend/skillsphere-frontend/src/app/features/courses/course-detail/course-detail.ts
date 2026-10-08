@@ -116,10 +116,74 @@ export class CourseDetailComponent implements OnInit {
     });
   }
 
+  expandedModules = new Set<number>();
+  completedLessonIds = new Set<number>();
+
+  toggleModule(moduleId: number): void {
+    if (this.expandedModules.has(moduleId)) {
+      this.expandedModules.delete(moduleId);
+    } else {
+      this.expandedModules.add(moduleId);
+    }
+  }
+
+  isModuleExpanded(moduleId: number): boolean {
+    return this.expandedModules.has(moduleId);
+  }
+
+  isLessonCompleted(lessonId: number): boolean {
+    return this.completedLessonIds.has(lessonId);
+  }
+
+  getCourseCategory(course: Course): string {
+    const text = `${course.title} ${course.description}`.toLowerCase();
+    if (text.includes('python') || text.includes('django') || text.includes('backend') || text.includes('api')) {
+      return 'Backend Development';
+    }
+    if (text.includes('angular') || text.includes('react') || text.includes('frontend') || text.includes('css') || text.includes('web') || text.includes('javascript')) {
+      return 'Web Development';
+    }
+    if (text.includes('data') || text.includes('ai') || text.includes('machine learning')) {
+      return 'Data & AI';
+    }
+    if (text.includes('cloud') || text.includes('devops') || text.includes('docker')) {
+      return 'Cloud & DevOps';
+    }
+    return 'Software Engineering';
+  }
+
+  getCourseThumbnailGradient(course: Course): string {
+    const gradients = [
+      'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+      'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+      'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
+      'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+      'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
+    ];
+    return gradients[Math.abs(course.id) % gradients.length];
+  }
+
+  getCourseIcon(course: Course): string {
+    const cat = this.getCourseCategory(course);
+    switch (cat) {
+      case 'Backend Development': return '⚡';
+      case 'Web Development': return '🌐';
+      case 'Data & AI': return '🧠';
+      case 'Cloud & DevOps': return '☁️';
+      default: return '💻';
+    }
+  }
+
+  getEstimatedDuration(course: Course): string {
+    const hours = (Math.abs(course.id * 1.5) % 6) + 2;
+    return `~${hours.toFixed(1)} hrs`;
+  }
+
   loadModules(courseId: number): void {
     this.courseService.getModules().subscribe({
       next: (modules: Module[]) => {
         this.modules = modules.filter(module => module.course === courseId);
+        this.modules.forEach(m => this.expandedModules.add(m.id));
         this.checkLoadingComplete();
       },
       error: (error) => {
@@ -299,9 +363,11 @@ export class CourseDetailComponent implements OnInit {
     this.learningService.getProgress().subscribe({
       next: (progressList) => {
         const courseLessonIds = this.lessons.map(l => l.id);
-        this.completedLessons = progressList.filter(
+        const completed = progressList.filter(
           p => courseLessonIds.includes(p.lesson) && p.is_completed
-        ).length;
+        );
+        this.completedLessons = completed.length;
+        this.completedLessonIds = new Set(completed.map(p => p.lesson));
       }
     });
   }

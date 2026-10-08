@@ -107,4 +107,59 @@ export class CourseListComponent implements OnInit {
   viewCourse(courseId: number): void {
     this.router.navigate(['/courses', courseId]);
   }
+
+  getCourseCategory(course: Course): string {
+    const text = `${course.title} ${course.description}`.toLowerCase();
+    if (text.includes('python') || text.includes('django') || text.includes('backend') || text.includes('api')) {
+      return 'Backend Development';
+    }
+    if (text.includes('angular') || text.includes('react') || text.includes('frontend') || text.includes('css') || text.includes('web') || text.includes('javascript')) {
+      return 'Web Development';
+    }
+    if (text.includes('data') || text.includes('ai') || text.includes('machine learning')) {
+      return 'Data & AI';
+    }
+    if (text.includes('cloud') || text.includes('devops') || text.includes('docker')) {
+      return 'Cloud & DevOps';
+    }
+    return 'Software Engineering';
+  }
+
+  getCourseDifficulty(course: Course): string {
+    const text = course.title.toLowerCase();
+    if (text.includes('advanced') || text.includes('mastery') || course.id % 3 === 0) {
+      return 'Advanced';
+    }
+    if (text.includes('intermediate') || course.id % 2 === 0) {
+      return 'Intermediate';
+    }
+    return 'Beginner';
+  }
+
+  getCourseThumbnailGradient(course: Course): string {
+    const gradients = [
+      'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+      'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+      'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
+      'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+      'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
+    ];
+    return gradients[Math.abs(course.id) % gradients.length];
+  }
+
+  getCourseIcon(course: Course): string {
+    const cat = this.getCourseCategory(course);
+    switch (cat) {
+      case 'Backend Development': return '⚡';
+      case 'Web Development': return '🌐';
+      case 'Data & AI': return '🧠';
+      case 'Cloud & DevOps': return '☁️';
+      default: return '💻';
+    }
+  }
+
+  getEstimatedDuration(course: Course): string {
+    const hours = (Math.abs(course.id * 1.5) % 6) + 2;
+    return `~${hours.toFixed(1)} hrs`;
+  }
 }

@@ -200,9 +200,34 @@
 
     <header class="topbar">
 
-      <div>
+      <div class="topbar-branding">
         <h2>SkillSphere</h2>
         <p>Learn. Practice. Grow.</p>
+      </div>
+
+      <div class="topbar-user-area">
+        <a
+          routerLink="/notifications"
+          class="topbar-notif-btn"
+          aria-label="View notifications"
+        >
+          <span class="topbar-notif-icon">🔔</span>
+          @if (unreadNotificationCount > 0) {
+            <span class="topbar-notif-badge">{{ unreadNotificationCount }}</span>
+          }
+        </a>
+
+        @if (currentUser) {
+          <div class="user-chip">
+            <div class="user-avatar">
+              {{ currentUser.username.charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-info">
+              <strong class="user-name">{{ currentUser.username }}</strong>
+              <span class="user-role-badge">{{ userRole }}</span>
+            </div>
+          </div>
+        }
       </div>
 
     </header>

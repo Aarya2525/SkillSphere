@@ -33,22 +33,48 @@
 
   @if (!loading && course) {
 
-    <button
-      type="button"
-      class="back-button"
-      (click)="goBack()"
-    >
-      ← Back to Courses
-    </button>
+    <!-- BREADCRUMB & BACK NAVIGATION -->
+    <div class="detail-nav-bar">
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        ← Back to Courses
+      </button>
 
+      <div class="breadcrumb-trail">
+        <span>Catalog</span>
+        <span class="breadcrumb-separator">/</span>
+        <span>{{ getCourseCategory(course) }}</span>
+        <span class="breadcrumb-separator">/</span>
+        <strong class="breadcrumb-current">{{ course.title }}</strong>
+      </div>
+    </div>
 
+    <!-- MODERN TWO-COLUMN LMS HERO -->
     <section class="course-header">
 
-      <div class="course-icon">
-        📚
+      <div
+        class="course-icon"
+        [style.background]="getCourseThumbnailGradient(course)"
+      >
+        {{ getCourseIcon(course) }}
       </div>
 
       <div class="course-header-content">
+
+        <div class="hero-top-badges">
+          <span class="category-pill">{{ getCourseCategory(course) }}</span>
+          <span class="published-badge">
+            {{
+              course.is_published
+                ? 'Published'
+                : 'Draft'
+            }}
+          </span>
+          <span class="duration-pill">⏱️ {{ getEstimatedDuration(course) }}</span>
+        </div>
 
         <h1>
           {{ course.title }}
@@ -60,23 +86,22 @@
 
         <div class="course-details">
 
-          <span>
-            👨‍🏫 {{ course.instructor_name }}
-          </span>
-
-          <span class="published-badge">
-            {{
-              course.is_published
-                ? 'Published'
-                : 'Draft'
-            }}
+          <span class="instructor-chip">
+            <span class="avatar-circle">
+              {{ (course.instructor_name || 'I').charAt(0).toUpperCase() }}
+            </span>
+            {{ course.instructor_name || 'Expert Instructor' }}
           </span>
 
           @if (reviews.length > 0) {
-            <span class="rating-badge" style="background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 13px;">
+            <span class="rating-badge">
               ⭐ {{ averageRating | number:'1.1-1' }} ({{ reviews.length }} review{{ reviews.length === 1 ? '' : 's' }})
             </span>
           }
+
+          <span class="curriculum-count-pill">
+            📚 {{ modules.length }} Module{{ modules.length === 1 ? '' : 's' }} · {{ lessons.length }} Lesson{{ lessons.length === 1 ? '' : 's' }}
+          </span>
 
         </div>
 
@@ -113,7 +138,7 @@
               @if (enrolling) {
                 Enrolling...
               } @else {
-                Enroll Now
+                Enroll Now — Free Access
               }
 
             </button>
@@ -121,7 +146,7 @@
           } @else {
 
             <div class="enrolled-status">
-              ✓ Enrolled
+              ✓ Enrolled in this Course
             </div>
 
             <button
@@ -129,7 +154,7 @@
               class="continue-button"
               (click)="goToLearning()"
             >
-              Continue Learning
+              Continue Learning →
             </button>
 
           }
@@ -152,17 +177,23 @@
     </section>
 
 
+    <!-- COLLAPSIBLE CURRICULUM SECTION -->
     <section class="modules-section">
 
       <div class="section-header">
 
         <h2>Course Content</h2>
 
-        <span>
-          {{ modules.length }} Module{{
-            modules.length === 1 ? '' : 's'
-          }}
-        </span>
+        <div class="curriculum-summary">
+          <span>
+            {{ modules.length }} Module{{ modules.length === 1 ? '' : 's' }} · {{ lessons.length }} Lesson{{ lessons.length === 1 ? '' : 's' }}
+          </span>
+          @if (isEnrolled && lessons.length > 0) {
+            <span class="progress-pill">
+              {{ completedLessons }}/{{ lessons.length }} Completed
+            </span>
+          }
+        </div>
 
       </div>
 
@@ -185,88 +216,110 @@
         track module.id
       ) {
 
-        <div class="module-card">
+        <div class="module-card" [class.is-collapsed]="!isModuleExpanded(module.id)">
 
-          <div class="module-header">
+          <button
+            type="button"
+            class="module-header"
+            (click)="toggleModule(module.id)"
+            [attr.aria-expanded]="isModuleExpanded(module.id)"
+          >
 
-            <div class="module-number">
-              {{ module.order }}
-            </div>
-
-            <div class="module-title">
-
-              <h3>
-                {{ module.title }}
-              </h3>
-
-              <span>
-                {{ getLessonsForModule(module.id).length }}
-                lesson{{
-                  getLessonsForModule(module.id).length === 1
-                    ? ''
-                    : 's'
-                }}
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <div class="lessons-list">
-
-            @for (
-              lesson of getLessonsForModule(module.id);
-              track lesson.id
-            ) {
-
-              <div class="lesson-item">
-
-                <div class="lesson-icon">
-                  📖
-                </div>
-
-
-                <div class="lesson-info">
-
-                  <h4>
-                    {{ lesson.title }}
-                  </h4>
-
-                  <p>
-                    Lesson {{ lesson.order }}
-                  </p>
-
-                </div>
-
-
-                <button
-                  type="button"
-                  class="lesson-button"
-                  [disabled]="!isEnrolled"
-                  (click)="startLesson(lesson.id)"
-                >
-
-                  @if (isEnrolled) {
-                    Start
-                  } @else {
-                    Enroll First
-                  }
-
-                </button>
-
+            <div class="module-header-left">
+              <div class="module-number">
+                {{ module.order }}
               </div>
 
-            }
+              <div class="module-title">
 
-          </div>
+                <h3>
+                  {{ module.title }}
+                </h3>
+
+                <span>
+                  {{ getLessonsForModule(module.id).length }}
+                  lesson{{
+                    getLessonsForModule(module.id).length === 1
+                      ? ''
+                      : 's'
+                  }}
+                </span>
+
+              </div>
+            </div>
+
+            <div class="module-toggle-indicator">
+              {{ isModuleExpanded(module.id) ? '▲ Collapse' : '▼ Expand' }}
+            </div>
+
+          </button>
+
+
+          @if (isModuleExpanded(module.id)) {
+
+            <div class="lessons-list">
+
+              @for (
+                lesson of getLessonsForModule(module.id);
+                track lesson.id
+              ) {
+
+                <div class="lesson-item" [class.is-completed]="isLessonCompleted(lesson.id)">
+
+                  <div class="lesson-icon">
+                    @if (isLessonCompleted(lesson.id)) {
+                      ✓
+                    } @else {
+                      📖
+                    }
+                  </div>
+
+
+                  <div class="lesson-info">
+
+                    <h4>
+                      {{ lesson.title }}
+                    </h4>
+
+                    <p>
+                      Lesson {{ lesson.order }}
+                      @if (isLessonCompleted(lesson.id)) {
+                        <span class="completed-tag">· Completed</span>
+                      }
+                    </p>
+
+                  </div>
+
+
+                  <button
+                    type="button"
+                    class="lesson-button"
+                    [class.btn-completed]="isLessonCompleted(lesson.id)"
+                    [disabled]="!isEnrolled"
+                    (click)="startLesson(lesson.id)"
+                  >
+
+                    @if (isEnrolled) {
+                      {{ isLessonCompleted(lesson.id) ? 'Review Lesson' : 'Start Lesson' }}
+                    } @else {
+                      Enroll First
+                    }
+
+                  </button>
+
+                </div>
+
+              }
+
+            </div>
+
+          }
 
         </div>
 
       }
 
     </section>
-
 
     <!-- ==================================================
          COURSE ASSESSMENT / QUIZ

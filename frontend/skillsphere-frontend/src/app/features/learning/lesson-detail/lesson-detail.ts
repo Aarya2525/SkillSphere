@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -25,6 +25,8 @@ import {
   AIAssistantService
 } from '../../../core/services/ai-assistant.service';
 
+import { SafeContentPipe } from '../../../shared/pipes/safe-content.pipe';
+
 export interface AIChatMessage {
   sender: 'user' | 'assistant';
   text: string;
@@ -34,7 +36,7 @@ export interface AIChatMessage {
 @Component({
   selector: 'app-lesson-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SafeContentPipe],
   templateUrl: './lesson-detail.html',
   styleUrl: './lesson-detail.scss'
 })
@@ -236,6 +238,17 @@ export class LessonDetailComponent implements OnInit, OnDestroy {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  @HostListener('window:keydown.escape')
+  onEscapeKey(): void {
+    if (this.sidebarOpen) {
+      this.closeSidebar();
+    }
   }
 
   markAsComplete(): void {

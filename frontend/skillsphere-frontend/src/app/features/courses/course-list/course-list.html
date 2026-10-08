@@ -12,47 +12,70 @@
     <!-- SEARCH & FILTER TOOLBAR -->
     <div class="catalog-toolbar">
       <div class="search-box">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon" aria-hidden="true">🔍</span>
         <input
           type="text"
           placeholder="Search by course title, keywords, or instructor..."
           [(ngModel)]="searchTerm"
           class="search-input"
+          aria-label="Search courses"
         />
         @if (searchTerm) {
-          <button type="button" class="clear-btn" (click)="clearSearch()">✕</button>
+          <button
+            type="button"
+            class="clear-btn"
+            (click)="clearSearch()"
+            aria-label="Clear search input"
+          >
+            ✕
+          </button>
         }
       </div>
 
-      <div class="filter-tabs">
+      <div class="filter-tabs" role="tablist" aria-label="Course filters">
         <button
           type="button"
           class="tab-btn"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'ALL'"
           [class.active]="activeTab === 'ALL'"
           (click)="setActiveTab('ALL')"
         >
-          All ({{ courses.length }})
+          All <span class="tab-count-badge">{{ courses.length }}</span>
         </button>
 
         <button
           type="button"
           class="tab-btn"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'ENROLLED'"
           [class.active]="activeTab === 'ENROLLED'"
           (click)="setActiveTab('ENROLLED')"
         >
-          Enrolled ({{ enrollments.length }})
+          Enrolled <span class="tab-count-badge">{{ enrollments.length }}</span>
         </button>
 
         <button
           type="button"
           class="tab-btn"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'AVAILABLE'"
           [class.active]="activeTab === 'AVAILABLE'"
           (click)="setActiveTab('AVAILABLE')"
         >
-          Available ({{ courses.length - enrollments.length }})
+          Available <span class="tab-count-badge">{{ courses.length - enrollments.length }}</span>
         </button>
       </div>
     </div>
+
+    @if (!loading && courses.length > 0) {
+      <div class="catalog-summary-bar">
+        <span>Showing <strong>{{ filteredCourses.length }}</strong> of {{ courses.length }} courses</span>
+        @if (searchTerm) {
+          <span class="filter-tag">Filter: "{{ searchTerm }}"</span>
+        }
+      </div>
+    }
   </div>
 
   @if (loading) {
@@ -107,21 +130,42 @@
 
         <article class="course-card" [class.enrolled]="isEnrolled(course.id)">
 
-          <div class="course-card-top">
-            <div class="course-icon">
-              📚
+          <!-- VISUAL GRADIENT THUMBNAIL -->
+          <div
+            class="course-thumbnail"
+            [style.background]="getCourseThumbnailGradient(course)"
+          >
+            <div class="thumbnail-overlay">
+              <span class="category-pill">{{ getCourseCategory(course) }}</span>
+
+              <div class="card-badges">
+                @if (isEnrolled(course.id)) {
+                  <span class="badge enrolled-badge">✓ Enrolled</span>
+                } @else {
+                  <span class="badge available-badge">Available</span>
+                }
+              </div>
             </div>
 
-            <div class="card-badges">
-              @if (isEnrolled(course.id)) {
-                <span class="badge enrolled-badge">✓ Enrolled</span>
-              } @else {
-                <span class="badge available-badge">Available</span>
-              }
+            <div class="thumbnail-center-icon">
+              {{ getCourseIcon(course) }}
             </div>
           </div>
 
           <div class="course-content">
+
+            <!-- METADATA CHIPS (Difficulty & Duration) -->
+            <div class="course-chips-row">
+              <span class="difficulty-chip" [attr.data-level]="getCourseDifficulty(course)">
+                {{ getCourseDifficulty(course) }}
+              </span>
+              <span class="duration-chip">
+                ⏱️ {{ getEstimatedDuration(course) }}
+              </span>
+              <span class="rating-chip">
+                ⭐ 4.9
+              </span>
+            </div>
 
             <h2 class="course-title">
               {{ course.title }}
@@ -132,11 +176,14 @@
             </p>
 
             <div class="course-meta">
-              <span class="meta-item">
-                👨‍🏫 {{ course.instructor_name || 'Instructor' }}
+              <span class="meta-item instructor-chip">
+                <span class="avatar-circle">
+                  {{ (course.instructor_name || 'I').charAt(0).toUpperCase() }}
+                </span>
+                {{ course.instructor_name || 'Expert Instructor' }}
               </span>
 
-              <span class="meta-item">
+              <span class="meta-item date-chip">
                 📅 {{ course.created_at | date:'mediumDate' }}
               </span>
             </div>
@@ -145,6 +192,7 @@
               <button
                 type="button"
                 class="view-course-btn"
+                [class.btn-continue]="isEnrolled(course.id)"
                 (click)="viewCourse(course.id)"
               >
                 {{ isEnrolled(course.id) ? 'Continue Learning →' : 'View Course Details →' }}
