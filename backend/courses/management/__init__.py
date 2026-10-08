@@ -1,0 +1,1 @@
+# SkillSphere courses management package
