@@ -87,4 +87,32 @@ describe('AuthService', () => {
 
     expect(service.getAccessToken()).toBe('new_access_token_456');
   });
+
+  it('refreshToken should share in-flight request when called concurrently', () => {
+    localStorage.setItem('skillsphere_refresh_token', 'valid_refresh_token');
+
+    let res1: any;
+    let res2: any;
+
+    service.refreshToken().subscribe(res => res1 = res);
+    service.refreshToken().subscribe(res => res2 = res);
+
+    const reqs = httpMock.match(`${environment.apiUrl}/auth/token/refresh/`);
+    expect(reqs.length).toBe(1);
+    reqs[0].flush({ access: 'shared_access_token' });
+
+    expect(res1).toEqual({ access: 'shared_access_token' });
+    expect(res2).toEqual({ access: 'shared_access_token' });
+    expect(service.getAccessToken()).toBe('shared_access_token');
+  });
+
+  it('refreshToken should throw error if no refresh token available', (done) => {
+    service.refreshToken().subscribe({
+      next: () => fail('should have failed'),
+      error: (err) => {
+        expect(err.message).toBe('No refresh token available');
+        done();
+      }
+    });
+  });
 });

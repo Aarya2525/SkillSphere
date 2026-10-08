@@ -352,21 +352,49 @@ class AuthenticationAndRBACTests(TestCase):
         self.assertEqual(created_user.role, User.Role.STUDENT)
         self.assertTrue(created_user.check_password("ValidPassword123!"))
 
-    # 2. Instructor registration privilege protection
-    def test_registration_ignores_role_escalation_attempt(self):
+    # 2. Safe registration role handling (STUDENT & INSTRUCTOR allowed, ADMIN & arbitrary roles rejected)
+    def test_registration_with_instructor_role_creates_instructor(self):
         payload = {
-            "username": "escalation_user",
-            "email": "escalation@example.com",
+            "username": "new_instructor",
+            "email": "new_instructor@example.com",
             "password": "ValidPassword123!",
             "role": "INSTRUCTOR",
         }
         response = self.client.post("/api/auth/register/", payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["role"], User.Role.INSTRUCTOR)
 
-        created_user = User.objects.get(username="escalation_user")
+        created_user = User.objects.get(username="new_instructor")
+        self.assertEqual(created_user.role, User.Role.INSTRUCTOR)
+
+    def test_registration_with_student_role_creates_student(self):
+        payload = {
+            "username": "explicit_student",
+            "email": "explicit_student@example.com",
+            "password": "ValidPassword123!",
+            "role": "STUDENT",
+        }
+        response = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["role"], User.Role.STUDENT)
+
+        created_user = User.objects.get(username="explicit_student")
         self.assertEqual(created_user.role, User.Role.STUDENT)
 
-    def test_registration_ignores_admin_role_escalation_attempt(self):
+    def test_registration_omitting_role_defaults_to_student(self):
+        payload = {
+            "username": "default_role_student",
+            "email": "default_role_student@example.com",
+            "password": "ValidPassword123!",
+        }
+        response = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["role"], User.Role.STUDENT)
+
+        created_user = User.objects.get(username="default_role_student")
+        self.assertEqual(created_user.role, User.Role.STUDENT)
+
+    def test_registration_rejects_admin_role_escalation_attempt(self):
         payload = {
             "username": "escalation_admin",
             "email": "escalation_admin@example.com",
@@ -374,10 +402,19 @@ class AuthenticationAndRBACTests(TestCase):
             "role": "ADMIN",
         }
         response = self.client.post("/api/auth/register/", payload, format="json")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(username="escalation_admin").exists())
 
-        created_user = User.objects.get(username="escalation_admin")
-        self.assertEqual(created_user.role, User.Role.STUDENT)
+    def test_registration_rejects_arbitrary_role_strings(self):
+        payload = {
+            "username": "arbitrary_role_user",
+            "email": "arbitrary_role@example.com",
+            "password": "ValidPassword123!",
+            "role": "SUPERUSER",
+        }
+        response = self.client.post("/api/auth/register/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(username="arbitrary_role_user").exists())
 
     # 3. Login success
     def test_login_success_returns_jwt_tokens(self):

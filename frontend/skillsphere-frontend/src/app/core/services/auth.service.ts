@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, throwError } from 'rxjs';
+import { Observable, finalize, shareReplay, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface LoginRequest {
@@ -88,7 +88,10 @@ export class AuthService {
     return !!this.getAccessToken();
   }
 
+  private refreshInProgress$: Observable<{ access: string }> | null = null;
+
   logout(): void {
+    this.refreshInProgress$ = null;
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.currentUserKey);
@@ -100,12 +103,22 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
-    return this.http
+    if (this.refreshInProgress$) {
+      return this.refreshInProgress$;
+    }
+
+    this.refreshInProgress$ = this.http
       .post<{ access: string }>(`${this.apiUrl}/token/refresh/`, { refresh })
       .pipe(
         tap(response => {
           localStorage.setItem(this.accessTokenKey, response.access);
+        }),
+        shareReplay(1),
+        finalize(() => {
+          this.refreshInProgress$ = null;
         })
       );
+
+    return this.refreshInProgress$;
   }
 }

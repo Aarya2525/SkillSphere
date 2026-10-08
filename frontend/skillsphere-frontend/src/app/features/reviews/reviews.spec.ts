@@ -119,4 +119,74 @@ describe('ReviewsComponent - Regression Tests', () => {
 
     expect(component.canReviewCourse(10)).toBeFalse();
   });
+
+  it('should allow student to delete own review, but disallow deleting another student review', () => {
+    const ownReview: Review = {
+      id: 1,
+      student: 42,
+      student_name: 'alice',
+      course: 10,
+      course_title: 'Angular Pro',
+      rating: 5,
+      comment: 'Loved it!',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    const otherReview: Review = {
+      id: 2,
+      student: 99,
+      student_name: 'bob',
+      course: 10,
+      course_title: 'Angular Pro',
+      rating: 4,
+      comment: 'Good course.',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    expect(component.canDeleteReview(ownReview)).toBeTrue();
+    expect(component.canDeleteReview(otherReview)).toBeFalse();
+  });
+
+  it('should allow admin to delete and moderate any review', () => {
+    component.currentUser = {
+      id: 999,
+      username: 'admin_user',
+      email: 'admin@example.com',
+      role: 'ADMIN'
+    };
+
+    const otherReview: Review = {
+      id: 2,
+      student: 99,
+      student_name: 'bob',
+      course: 10,
+      course_title: 'Angular Pro',
+      rating: 1,
+      comment: 'Inappropriate comment.',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    expect(component.isAdmin).toBeTrue();
+    expect(component.canDeleteReview(otherReview)).toBeTrue();
+    expect(component.isOwnReview(otherReview)).toBeFalse();
+  });
+
+  it('should prevent non-owners from editing another student review', () => {
+    const otherReview: Review = {
+      id: 2,
+      student: 99,
+      student_name: 'bob',
+      course: 10,
+      course_title: 'Angular Pro',
+      rating: 4,
+      comment: 'Good course.',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    component.startEdit(otherReview);
+    expect(component.editingReviewId).toBeNull();
+  });
 });

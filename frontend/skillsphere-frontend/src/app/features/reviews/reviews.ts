@@ -177,6 +177,10 @@ export class ReviewsComponent implements OnInit {
     });
   }
 
+  get isAdmin(): boolean {
+    return this.currentUser?.role === 'ADMIN';
+  }
+
   canReviewCourse(courseId: number): boolean {
     if (!this.currentUser) {
       return !this.reviews.some(review => review.course === courseId);
@@ -195,6 +199,10 @@ export class ReviewsComponent implements OnInit {
       review.student === this.currentUser.id ||
       review.student_name === this.currentUser.username
     );
+  }
+
+  canDeleteReview(review: Review): boolean {
+    return this.isOwnReview(review) || this.isAdmin;
   }
 
   getReviewedCourseIds(): number[] {
@@ -231,6 +239,9 @@ export class ReviewsComponent implements OnInit {
   }
 
   startEdit(review: Review): void {
+    if (!this.isOwnReview(review)) {
+      return;
+    }
     this.editingReviewId = review.id;
     this.editRating = review.rating;
     this.editComment = review.comment;
@@ -249,6 +260,10 @@ export class ReviewsComponent implements OnInit {
   }
 
   saveEdit(review: Review): void {
+    if (!this.isOwnReview(review)) {
+      return;
+    }
+
     if (!this.editComment.trim()) {
       this.errorMessage = 'Please enter a comment.';
       return;
@@ -293,6 +308,10 @@ export class ReviewsComponent implements OnInit {
   }
 
   deleteReview(review: Review): void {
+    if (!this.canDeleteReview(review)) {
+      return;
+    }
+
     const confirmed = window.confirm(
       'Are you sure you want to delete this review?'
     );
@@ -308,7 +327,7 @@ export class ReviewsComponent implements OnInit {
         );
 
         this.successMessage =
-          'Your review has been deleted successfully.';
+          'Review has been deleted successfully.';
         this.errorMessage = '';
       },
       error: (error) => {
@@ -322,7 +341,7 @@ export class ReviewsComponent implements OnInit {
             'Your session has expired. Please log in again.';
         } else {
           this.errorMessage =
-            'Unable to delete your review. Please try again.';
+            'Unable to delete this review. Please try again.';
         }
       }
     });

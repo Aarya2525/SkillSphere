@@ -506,16 +506,18 @@
                   </p>
 
 
-                  @if (isOwnReview(review)) {
+                  @if (canDeleteReview(review)) {
 
                     <div class="review-actions">
 
-                      <button
-                        type="button"
-                        (click)="startEdit(review)"
-                      >
-                        Edit
-                      </button>
+                      @if (isOwnReview(review)) {
+                        <button
+                          type="button"
+                          (click)="startEdit(review)"
+                        >
+                          Edit
+                        </button>
+                      }
 
                       <button
                         type="button"
