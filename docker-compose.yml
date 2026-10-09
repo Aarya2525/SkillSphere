@@ -4,13 +4,56 @@ services:
     container_name: skillsphere-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-skillsphere}
+      POSTGRES_USER: ${POSTGRES_USER:-skillsphere_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skillsphere_password}
     ports:
-      - "5433:5432"
+      - "5436:5432"
     volumes:
-      - skillsphere_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skillsphere_user} -d ${POSTGRES_DB:-skillsphere}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skillsphere-backend
+    restart: unless-stopped
+    environment:
+      - DB_NAME=${POSTGRES_DB:-skillsphere}
+      - DB_USER=${POSTGRES_USER:-skillsphere_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-skillsphere_password}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-skillsphere-dev-key-change-in-production}
+      - DEBUG=${DEBUG:-False}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,backend,skillsphere-backend}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
+      - AI_PROVIDER=${AI_PROVIDER:-gemini}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-gemini-1.5-flash}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend/skillsphere-frontend
+      dockerfile: Dockerfile
+    container_name: skillsphere-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
 
 volumes:
-  skillsphere_postgres_data: 
+  postgres_data:
+    external: true
+    name: skillsphere_skillsphere_postgres_data
