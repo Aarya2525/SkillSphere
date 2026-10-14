@@ -31,5 +31,9 @@ COPY --from=builder /app/dist/skillsphere-frontend/browser /usr/share/nginx/html
 # Expose HTTP port
 EXPOSE 80
 
+# Healthcheck probe (Stage 22.4)
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q -O /dev/null http://127.0.0.1:80/ || exit 1
+
 # Run Nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]

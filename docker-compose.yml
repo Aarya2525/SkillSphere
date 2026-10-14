@@ -30,7 +30,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - SECRET_KEY=${SECRET_KEY:-django-insecure-skillsphere-dev-key-change-in-production}
-      - DEBUG=${DEBUG:-False}
+      - DEBUG=${DEBUG:-True}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,backend,skillsphere-backend}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
       - AI_PROVIDER=${AI_PROVIDER:-gemini}
@@ -38,6 +38,14 @@ services:
       - AI_MODEL=${AI_MODEL:-gemini-1.5-flash}
     ports:
       - "8000:8000"
+    volumes:
+      - django_static_volume:/app/staticfiles
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,10 +58,20 @@ services:
     restart: unless-stopped
     ports:
       - "4200:80"
+    volumes:
+      - django_static_volume:/usr/share/nginx/html/static:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:
     external: true
     name: skillsphere_skillsphere_postgres_data
+  django_static_volume:
