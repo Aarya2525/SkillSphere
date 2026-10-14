@@ -15,6 +15,44 @@
   </header>
 
 
+  @if (notificationMessage) {
+
+    <section
+      class="alert-card error-card notification-banner"
+      role="alert"
+      aria-live="polite"
+    >
+
+      <div class="alert-icon" aria-hidden="true">
+        ⚠️
+      </div>
+
+      <div class="alert-content">
+
+        <h2>
+          Access Denied
+        </h2>
+
+        <p>
+          {{ notificationMessage }}
+        </p>
+
+      </div>
+
+      <button
+        type="button"
+        class="alert-dismiss"
+        (click)="dismissNotification()"
+        aria-label="Dismiss notification"
+      >
+        ✕
+      </button>
+
+    </section>
+
+  }
+
+
   @if (loading) {
 
     <section class="state-card">

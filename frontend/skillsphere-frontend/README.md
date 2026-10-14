@@ -206,7 +206,7 @@ Routes are configured in `src/app/app.routes.ts`:
 
 ## Running Unit Tests
 
-SkillSphere frontend features **66 comprehensive unit tests** covering components, services, interceptors, and guards.
+SkillSphere frontend features **81 comprehensive unit tests** covering components, services, interceptors, route guards, and instructor workflows (expanded from the historical 66-test baseline).
 
 ### Run Tests in Headless Mode (CI / Verification)
 
@@ -218,9 +218,10 @@ npm test -- --watch=false --browsers=ChromeHeadless
 
 Expected output:
 ```text
-Chrome Headless 152.0.0.0 (Windows 10): Executed 66 of 66 SUCCESS
-TOTAL: 66 SUCCESS
+Chrome Headless 155.0.0.0 (Windows 10): Executed 81 of 81 SUCCESS
+TOTAL: 81 SUCCESS
 ```
+*(Historical baseline: 66 tests).*
 
 ### Run Tests in Interactive Watch Mode
 

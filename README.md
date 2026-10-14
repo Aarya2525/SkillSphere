@@ -410,14 +410,14 @@ python manage.py test
 ```
 *Baseline: 168 tests pass (0 failures).*
 
-### Frontend Karma Test Suite (66 Tests)
-Covers component rendering, route guards, auth interceptor token refresh cycles, and API service contracts using headless Chrome.
+### Frontend Karma Test Suite (81 Tests)
+Covers component rendering, route guards, auth interceptor token refresh cycles, instructor management workflows, and API service contracts using headless Chrome.
 
 ```bash
 # Run from frontend/skillsphere-frontend:
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
-*Baseline: 66 tests pass (0 failures).*
+*Current suite: 81 tests pass (0 failures); historical baseline: 66 tests.*
 
 ### Production Build Verification
 ```bash
@@ -545,7 +545,7 @@ skillsphere/
 - [x] Assessment engine with auto-grading, attempts history, and review breakdown.
 - [x] Tamper-resistant certificate generation with public UUID verification.
 - [x] Embedded lesson-aware AI Learning Assistant with prompt injection defense.
-- [x] Automated test suites (147 backend tests, 66 frontend tests).
+- [x] Automated test suites (168 backend tests, 81 frontend tests [historical baseline: 66 frontend tests]).
 
 ### Planned Enhancements
 - [ ] Direct bridge integration with local Ollama (`qwen_ollama`) container for completely offline AI execution.

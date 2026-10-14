@@ -104,6 +104,8 @@ export class InstructorCourseManagementComponent
 
   loading = false;
 
+  isUnauthorized = false;
+
   contentLoading = false;
 
   savingModule = false;
@@ -230,6 +232,8 @@ export class InstructorCourseManagementComponent
 
     this.loading = true;
 
+    this.isUnauthorized = false;
+
     this.errorMessage = '';
 
     this.courseService
@@ -258,15 +262,31 @@ export class InstructorCourseManagementComponent
 
           this.loading = false;
 
+          if (error.status === 403) {
+
+            this.isUnauthorized = true;
+
+            this.errorMessage = '';
+
+            this.router.navigate([
+              '/instructor/dashboard'
+            ], {
+              state: {
+                notification:
+                  'You do not have permission to manage this course.',
+                notificationMessage:
+                  'You do not have permission to manage this course.'
+              }
+            });
+
+            return;
+
+          }
+
           if (error.status === 401) {
 
             this.errorMessage =
               'Your session has expired. Please log in again.';
-
-          } else if (error.status === 403) {
-
-            this.errorMessage =
-              'You do not have permission to manage this course.';
 
           } else if (error.status === 404) {
 
@@ -495,6 +515,11 @@ export class InstructorCourseManagementComponent
         },
 
         error: (error) => {
+
+          if (this.isUnauthorized) {
+            this.contentLoading = false;
+            return;
+          }
 
           console.error(
             'Failed to load modules:',
@@ -1261,6 +1286,10 @@ export class InstructorCourseManagementComponent
         }
       },
       error: (error) => {
+        if (this.isUnauthorized) {
+          this.quizLoading = false;
+          return;
+        }
         console.error('Failed to load course quiz:', error);
         this.quizLoading = false;
         this.quizErrorMessage = 'Unable to load course assessment.';

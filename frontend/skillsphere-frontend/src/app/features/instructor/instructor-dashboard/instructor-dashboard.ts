@@ -5,7 +5,7 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 
 import {
   CourseService,
@@ -28,13 +28,47 @@ export class InstructorDashboardComponent
   private readonly courseService =
     inject(CourseService);
 
+  private readonly router =
+    inject(Router, { optional: true });
+
+  private readonly route =
+    inject(ActivatedRoute, { optional: true });
+
   courses: Course[] = [];
 
   loading = true;
   errorMessage = '';
+  notificationMessage = '';
 
   ngOnInit(): void {
+    this.extractNavigationNotification();
     this.loadCourses();
+  }
+
+  extractNavigationNotification(): void {
+    const nav = this.router?.getCurrentNavigation?.();
+    const state = (nav?.extras?.state ?? (typeof history !== 'undefined' ? history.state : null)) as Record<string, unknown> | null;
+
+    if (state) {
+      const msg = state['notification'] ?? state['notificationMessage'] ?? state['message'] ?? state['alert'] ?? state['error'];
+      if (typeof msg === 'string' && msg.trim()) {
+        this.notificationMessage = msg.trim();
+      }
+    }
+
+    const queryParamMsg = this.route?.snapshot?.queryParamMap?.get('message') || this.route?.snapshot?.queryParamMap?.get('notification');
+    if (queryParamMsg && !this.notificationMessage) {
+      this.notificationMessage = queryParamMsg;
+    }
+
+    if (this.notificationMessage && typeof window !== 'undefined' && window.history?.replaceState && state) {
+      const { notification, notificationMessage, message, alert, error, ...rest } = state;
+      window.history.replaceState(rest, document.title);
+    }
+  }
+
+  dismissNotification(): void {
+    this.notificationMessage = '';
   }
 
   loadCourses(): void {

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "//": "CONFIGURATION PLACEHOLDER: Replace https://REPLACE-WITH-YOUR-BACKEND-API-DOMAIN.example.com with your actual backend HTTPS origin before production deployment.",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://REPLACE-WITH-YOUR-BACKEND-API-DOMAIN.example.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -351,6 +351,30 @@ All application API endpoints are mounted under `/api/`:
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/ai/ask/` | Ask educational questions about a lesson | Enrolled Student / Instructor |
 
+### 10. System Health Probe (`config`)
+
+| Method | Endpoint | Description | Permission |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/health/` | Liveness and database connectivity health probe | AllowAny |
+
+- **Operational Health Verification:** Evaluates active PostgreSQL connectivity by executing a lightweight `SELECT 1` query via the default database connection.
+- **Healthy Response (HTTP 200 OK):** Returned when database connectivity is operational:
+  ```json
+  {
+    "status": "healthy",
+    "database": "connected"
+  }
+  ```
+- **Failure Response (HTTP 503 Service Unavailable):** Returned when database connectivity fails:
+  ```json
+  {
+    "status": "unhealthy",
+    "database": "disconnected"
+  }
+  ```
+- **Sanitized Diagnostics:** Excluded from authentication (`AllowAny`) and rate throttling for Docker, container orchestrator, and load balancer health checks. Never exposes database hostnames, ports, credentials, stack traces, or internal exception details.
+- **Root URL Alias:** Also routed at root `GET /health/` via `backend/config/urls.py`.
+
 ---
 
 ## AI Learning Assistant

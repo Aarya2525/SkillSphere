@@ -33,7 +33,7 @@
        ALERTS
        ================================================== -->
 
-  @if (errorMessage) {
+  @if (errorMessage && !isUnauthorized) {
 
     <div class="alert-card error-card">
 
@@ -122,6 +122,22 @@
 
       </div>
 
+    } @else if (isUnauthorized) {
+
+      <div class="loading-state" role="status" aria-live="polite">
+
+        <div class="loading-spinner"></div>
+
+        <p>
+          Redirecting to instructor dashboard...
+        </p>
+
+      </div>
+
+    } @else if (!course && courseId !== null) {
+
+      <!-- Course failed to load with non-403 error - invalid editor is hidden -->
+
     } @else {
 
       <form
@@ -202,7 +218,7 @@
        COURSE CONTENT
        ================================================== -->
 
-  @if (courseId !== null) {
+  @if (courseId !== null && course !== null && !isUnauthorized) {
 
     <section class="content-management-card">
 
