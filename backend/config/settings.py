@@ -1,6 +1,8 @@
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
@@ -25,14 +27,39 @@ for env_path in (BASE_DIR.parent / ".env", BASE_DIR / ".env"):
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
+INSECURE_DEV_SECRET_KEY = "django-insecure-skillsphere-dev-key-change-in-production"
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
-    "django-insecure-skillsphere-dev-key-change-in-production",
-)
-
+    INSECURE_DEV_SECRET_KEY,
+).strip()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").strip().lower() in ("true", "1", "yes")
+
+# In local development mode, if SECRET_KEY is empty, fallback to dev secret
+if DEBUG and not SECRET_KEY:
+    SECRET_KEY = INSECURE_DEV_SECRET_KEY
+
+
+def validate_production_secret(secret_key: str, debug: bool) -> None:
+    """
+    Validate that production deployments (DEBUG=False) have a valid, secure SECRET_KEY.
+    Raises ImproperlyConfigured if the secret is missing, empty, or set to the known
+    insecure development default. Never prints or reveals the secret value in errors.
+    """
+    if not debug:
+        if not secret_key or secret_key == INSECURE_DEV_SECRET_KEY:
+            raise ImproperlyConfigured(
+                "Production security validation failed: SECRET_KEY is missing, empty, "
+                "or set to the known development fallback. "
+                "Set a unique, cryptographically strong SECRET_KEY environment variable "
+                "when DEBUG is False."
+            )
+
+
+# Perform startup validation for production mode (unless running in test runner or static collection)
+if not any(arg in sys.argv for arg in ("test", "collectstatic")):
+    validate_production_secret(SECRET_KEY, DEBUG)
 
 allowed_hosts_str = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_str.split(",") if h.strip()] if allowed_hosts_str else []
@@ -117,6 +144,25 @@ DB_PASSWORD = os.environ.get(
 DB_HOST = os.environ.get("DB_HOST", "localhost")
 DB_PORT = os.environ.get("DB_PORT", "5436")
 
+# Database Connection Lifetime (CONN_MAX_AGE)
+# In local development, 0 closes connections after each request, avoiding idle connections.
+# In production with persistent Gunicorn workers, setting a positive integer (e.g. 60-600s)
+# allows connection reuse, reducing connection establishment overhead with PostgreSQL.
+def parse_conn_max_age(value: str | None, default: int = 0) -> int:
+    """
+    Parse database connection lifetime in seconds.
+    Normalizes negative values to 0 and safely falls back to default on invalid or empty input.
+    """
+    if value is None:
+        return default
+    try:
+        return max(0, int(str(value).strip()))
+    except (ValueError, TypeError):
+        return default
+
+
+CONN_MAX_AGE = parse_conn_max_age(os.environ.get("CONN_MAX_AGE", "0"))
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -125,6 +171,7 @@ DATABASES = {
         "PASSWORD": DB_PASSWORD,
         "HOST": DB_HOST,
         "PORT": DB_PORT,
+        "CONN_MAX_AGE": CONN_MAX_AGE,
     }
 }
 
@@ -165,7 +212,7 @@ USE_TZ = True
 
 # Static files
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
@@ -247,6 +294,49 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
+# CSRF Trusted Origins (Stage 22.2)
+# In Django 4.0+ / 6.1+, POST requests sent over HTTPS or from separate origins
+# require the origin to be listed in CSRF_TRUSTED_ORIGINS.
+# Wildcards ('*') are unsafe and strictly disallowed.
+# In local development (DEBUG=True) or local Docker testing where ALLOWED_HOSTS
+# includes localhost / 127.0.0.1, localhost origins are trusted by default.
+# In production (DEBUG=False without localhost in ALLOWED_HOSTS), defaults to empty
+# so that production deployments must explicitly declare trusted HTTPS origins.
+DEFAULT_LOCAL_CSRF_ORIGINS = (
+    "http://localhost:4200,http://127.0.0.1:4200,http://localhost:8000,http://127.0.0.1:8000"
+)
+
+
+def get_default_csrf_trusted_origins(debug: bool, allowed_hosts: list[str]) -> str:
+    """
+    Determine default CSRF trusted origins string based on environment.
+    Retains localhost origins for local development (debug=True) and local Docker (localhost in allowed_hosts).
+    Defaults to empty string for production deployments with public hostnames.
+    """
+    if debug or "localhost" in allowed_hosts or "127.0.0.1" in allowed_hosts:
+        return DEFAULT_LOCAL_CSRF_ORIGINS
+    return ""
+
+
+def parse_csrf_trusted_origins(raw_origins: str | None) -> list[str]:
+    """
+    Parse a comma-separated list of CSRF trusted origins.
+    Strips whitespace, ignores empty entries, and strictly disallows wildcards ('*').
+    """
+    if not raw_origins:
+        return []
+    return [
+        origin.strip()
+        for origin in raw_origins.split(",")
+        if origin.strip() and origin.strip() != "*"
+    ]
+
+
+default_csrf = get_default_csrf_trusted_origins(DEBUG, ALLOWED_HOSTS)
+csrf_trusted_origins_str = os.environ.get("CSRF_TRUSTED_ORIGINS", default_csrf)
+CSRF_TRUSTED_ORIGINS = parse_csrf_trusted_origins(csrf_trusted_origins_str)
+
+
 # ============================================================
 # AI LEARNING ASSISTANT CONFIGURATION (Stage 14 & 15)
 # ============================================================
@@ -263,7 +353,7 @@ AI_MAX_RESPONSE_CHARS = int(os.environ.get("AI_MAX_RESPONSE_CHARS", "4000").stri
 
 
 # ============================================================
-# SECURITY HEADERS & PRODUCTION HARDENING (Stage 18)
+# SECURITY HEADERS & PRODUCTION HARDENING (Stage 18 & 22)
 # ============================================================
 
 SECURE_BROWSER_XSS_FILTER = True
@@ -272,6 +362,22 @@ X_FRAME_OPTIONS = "DENY"
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# Trusted Reverse Proxy SSL Header (Stage 22.2)
+# Security Warning / Trust Assumption:
+# ONLY enable SECURE_PROXY_SSL_HEADER when Django is running behind a trusted reverse proxy
+# (e.g. Nginx, AWS ALB, Cloudflare, Render) that guarantees X-Forwarded-Proto is stripped
+# from untrusted client requests and set correctly by the proxy.
+# Do NOT enable this if Django is directly accessible by clients on the host or public internet,
+# as clients could spoof the header and bypass HTTPS enforcement.
+USE_SECURE_PROXY_SSL_HEADER = os.environ.get(
+    "SECURE_PROXY_SSL_HEADER", "False"
+).strip().lower() in ("true", "1", "yes")
+
+if USE_SECURE_PROXY_SSL_HEADER:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+else:
+    SECURE_PROXY_SSL_HEADER = None
 
 SECURE_SSL_REDIRECT = os.environ.get(
     "SECURE_SSL_REDIRECT", "False"

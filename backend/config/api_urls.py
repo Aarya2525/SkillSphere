@@ -12,9 +12,20 @@ from accounts.views import (
     InstructorTestView,
     AdminTestView,
 )
+from config.views import HealthCheckView
 
 
 urlpatterns = [
+    # ============================================================
+    # SYSTEM HEALTH PROBE (Stage 22.4)
+    # ============================================================
+
+    path(
+        "health/",
+        HealthCheckView.as_view(),
+        name="health_check",
+    ),
+
     # ============================================================
     # AUTHENTICATION
     # ============================================================
