@@ -330,6 +330,9 @@ Configuration is managed via environment variables defined in `.env`:
 | `AI_MODEL` | `gemini-1.5-flash` | Gemini model identifier |
 | `AI_REQUEST_TIMEOUT` | `30` | Timeout in seconds for AI completions |
 | `AI_RATE_LIMIT` | `30/minute` | Per-user throttling threshold for AI queries |
+| `CONN_MAX_AGE` | `0` | Database connection lifetime in seconds (0 = close per request) |
+| `CSRF_TRUSTED_ORIGINS` | *(environment-aware)* | Comma-separated list of trusted origins for CSRF over HTTPS (defaults to localhost in dev/Docker; required in production) |
+| `SECURE_PROXY_SSL_HEADER` | `False` | Enable ONLY behind trusted reverse proxy controlling X-Forwarded-Proto |
 
 > 🔒 **Security Notice:** The `.env` file is excluded from version control via `.gitignore`. Never commit `.env` files, API keys, private certificates, or database credentials to GitHub.
 
@@ -395,8 +398,8 @@ The `external: true` setting protects your data from being inadvertently modifie
 
 SkillSphere includes comprehensive automated test suites for both backend and frontend layers:
 
-### Backend Test Suite (147 Tests)
-Covers authentication, model permissions, enrollment isolation, progress recalculations, quiz grading, certificate generation, review constraints, and AI prompt boundaries.
+### Backend Test Suite (168 Tests)
+Covers authentication, model permissions, production settings hardening, Nginx & static asset routing, application health probes, automated CI pipelines, production Compose security hardening, deployment readiness specifications, enrollment isolation, progress recalculations, quiz grading, certificate generation, review constraints, and AI prompt boundaries.
 
 ```bash
 # Run inside Docker container:
@@ -405,7 +408,7 @@ docker exec skillsphere-backend python manage.py test
 # Run locally on host:
 python manage.py test
 ```
-*Baseline: 147 tests pass (0 failures).*
+*Baseline: 168 tests pass (0 failures).*
 
 ### Frontend Karma Test Suite (66 Tests)
 Covers component rendering, route guards, auth interceptor token refresh cycles, and API service contracts using headless Chrome.
@@ -446,14 +449,17 @@ Before deploying SkillSphere to a public, internet-facing production environment
 
 1. **Remove Exposed Host Ports:** Unpublish ports `5436` (PostgreSQL) and `8000` (Django) from the host network. All traffic must ingress solely through Nginx (ports 80 and 443).
 2. **TLS / HTTPS Termination:** Install valid TLS certificates (e.g., Let's Encrypt / Certbot) on Nginx and enforce HTTPS redirection.
-3. **Secret Generation:** Replace all development secret keys with a cryptographically generated, random `SECRET_KEY` via production secrets management.
+3. **Secret Enforcement:** Supply a cryptographically strong, random `SECRET_KEY` via production secrets management. In production (`DEBUG=False`), startup strictly fails if `SECRET_KEY` is empty or set to the development fallback.
 4. **Environment Constraints:** Strictly enforce `DEBUG=False` and set `ALLOWED_HOSTS` to your registered production domain name.
-5. **HTTPS Cookie Hardening:** Enable Django security settings:
+5. **Trusted Reverse Proxy Header:** Set `SECURE_PROXY_SSL_HEADER=True` when running behind a trusted reverse proxy that controls `X-Forwarded-Proto`.
+6. **CSRF Trusted Origins:** Define `CSRF_TRUSTED_ORIGINS` (e.g., `https://yourdomain.com`). Defaults to localhost in local dev/Docker, but defaults to empty in production when using public hostnames. Wildcards are rejected.
+7. **Database Connection Lifetime:** Set `CONN_MAX_AGE` (e.g., `60` or `300` seconds) to reuse PostgreSQL connections under Gunicorn.
+8. **HTTPS Cookie Hardening:** Enable Django security settings:
    - `SECURE_SSL_REDIRECT = True`
    - `SESSION_COOKIE_SECURE = True`
    - `CSRF_COOKIE_SECURE = True`
    - `SECURE_HSTS_SECONDS = 31536000`
-6. **Static File Collection:** Run `python manage.py collectstatic --noinput` to assemble Django admin static files into `STATIC_ROOT`.
+9. **Static Asset Pipeline & Ingress Routing (Stage 22.3):** Static assets are collected via `collectstatic --noinput` into `django_static_volume` (mounted to `/usr/share/nginx/html/static:ro` in Nginx). Nginx handles reverse proxying for `/admin/` and `/api/`, serves static files directly with 30-day immutable caching, and applies cache-busting revalidation for `index.html`.
 
 ---
 

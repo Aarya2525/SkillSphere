@@ -137,6 +137,7 @@ The Django settings (`backend/config/settings.py`) load database connection sett
 | `DB_PASSWORD` | *(from `.env`)* | *(from `.env`)* | PostgreSQL user password |
 | `DB_HOST` | `localhost` | `postgres` | Host address of PostgreSQL |
 | `DB_PORT` | `5436` | `5432` | Port mapped to PostgreSQL |
+| `CONN_MAX_AGE` | `0` | `0` | Database connection lifetime in seconds (0 = close per request) |
 
 ### Running PostgreSQL in Docker for Local Host Development
 
@@ -379,7 +380,7 @@ The AI Learning Assistant provides contextual explanations, summaries, and pedag
 
 ## Running Backend Tests
 
-The backend test suite contains **147 comprehensive tests** covering authentication, permissions, courses, enrollments, learning progress, quizzes, certificates, reviews, notifications, AI boundaries, rate throttling, and error handling.
+The backend test suite contains **168 comprehensive tests** covering authentication, permissions, production settings hardening, Nginx and static asset delivery, application health endpoints, automated CI pipelines, production Compose security hardening, deployment readiness specifications, courses, enrollments, learning progress, quizzes, certificates, reviews, notifications, AI boundaries, rate throttling, and error handling.
 
 To run all tests locally:
 
@@ -459,10 +460,13 @@ The configuration in `docker-compose.yml` is an engineering-verified **local Doc
 For a **public production deployment**, the following hardening steps must be implemented:
 1. **Remove Public Ports:** Unpublish ports `5436` and `8000` from the host. Only the reverse proxy (ports 80 and 443) should accept inbound external connections.
 2. **HTTPS / TLS Termination:** Secure Nginx with valid TLS certificates (e.g., Let's Encrypt / Certbot).
-3. **Secret Rotation:** Generate a cryptographically strong, random `SECRET_KEY` in environment variables rather than relying on default fallbacks.
+3. **Secret Enforcement:** Supply a cryptographically strong, random `SECRET_KEY` in environment variables. When `DEBUG=False`, startup will strictly fail if `SECRET_KEY` is empty or matches the development fallback.
 4. **Environment Hardening:** Ensure `DEBUG=False` is strictly maintained and restrict `ALLOWED_HOSTS` to the verified domain name.
-5. **HTTPS Security Headers:** Set `SECURE_SSL_REDIRECT=True`, `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`, and configure HSTS headers.
-6. **Static File Collection:** Run `python manage.py collectstatic --noinput` to assemble Django admin assets into `STATIC_ROOT`.
+5. **Trusted Reverse Proxy Header:** Set `SECURE_PROXY_SSL_HEADER=True` when behind a trusted reverse proxy (e.g. Nginx, ALB) that safely controls `X-Forwarded-Proto`. (Trust assumption: only enable if the proxy strips/sets this header).
+6. **CSRF Trusted Origins:** Define `CSRF_TRUSTED_ORIGINS` with comma-separated HTTPS origins (e.g. `https://yourdomain.com`). Defaults to localhost in local dev/Docker; defaults to empty in production deployments using public hostnames without localhost. Wildcards (`*`) are disallowed.
+7. **Database Connection Lifetime:** Set `CONN_MAX_AGE` (e.g. `60` or `300` seconds) to enable connection reuse across requests under Gunicorn.
+8. **HTTPS Security Headers:** Set `SECURE_SSL_REDIRECT=True`, `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`, and configure HSTS headers.
+9. **Static Asset Pipeline & Ingress Routing (Stage 22.3):** Static assets are collected via `collectstatic --noinput` into `django_static_volume` (mounted to `/usr/share/nginx/html/static:ro` in Nginx). Nginx handles reverse proxying for `/admin/` and `/api/`, serves static files directly with 30-day immutable caching, and applies cache-busting revalidation for `index.html`.
 
 ---
 
