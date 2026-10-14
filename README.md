@@ -171,15 +171,32 @@ SkillSphere enforces role-based authorization at both the client interface and s
 
 ## Screenshots & Demo
 
-*(Note: UI screenshot assets are planned and not currently included in the repository. They will be placed in `docs/screenshots/` in a future release).*
+A visual overview of SkillSphere's primary user workflows, captured directly from the running full-stack application.
 
-| View | Description | Status |
-| :--- | :--- | :---: |
-| **Course Catalog** | Responsive grid of published courses with category filters, ratings, and instructor metadata | *(Planned asset)* |
-| **Course Player & AI Tutor** | Video player and Markdown content alongside the interactive AI Learning Assistant panel | *(Planned asset)* |
-| **Quiz Interface** | Multiple-choice assessment with instant evaluation, passing indicators, and attempt breakdown | *(Planned asset)* |
-| **Certificate Verification** | Downloadable certificate credential with unique UUID verification interface | *(Planned asset)* |
-| **Instructor Studio** | Curriculum authoring dashboard for managing modules, lessons, and quiz questions | *(Planned asset)* |
+### 1. Course Catalog & Exploration
+Browse published learning tracks with real-time keyword search, domain category filters, difficulty indicators, star ratings, and enrollment state badges.
+
+![SkillSphere Course Catalog](docs/screenshots/01_course_catalog.png)
+
+### 2. Learning Player & Embedded AI Assistant
+Full lesson player featuring the curriculum syllabus drawer, rich Markdown technical content, progress tracking, and the embedded AI Learning Assistant with quick-action prompt chips.
+
+![SkillSphere Lesson Player and AI Learning Assistant](docs/screenshots/02_learning_player_ai.png)
+
+### 3. Quiz Assessment & Attempt Review
+Assessment review interface showing scoring metrics, passing criteria, attempt metadata, and comprehensive question-by-question answer breakdowns.
+
+![SkillSphere Quiz Assessment Results](docs/screenshots/03_quiz_assessment.png)
+
+### 4. Certificate Verification
+Public verification interface validating issued credentials via unique credential UUID, verifying completion percentage, student persona, and course authenticity without requiring authentication.
+
+![SkillSphere Public Certificate Verification](docs/screenshots/04_verified_certificate.png)
+
+### 5. Instructor Studio & Dashboard
+Instructor command center displaying active teaching metrics, course lifecycle status pills (`Published` vs `Draft`), and curriculum management actions.
+
+![SkillSphere Instructor Dashboard](docs/screenshots/05_instructor_dashboard.png)
 
 ---
 
