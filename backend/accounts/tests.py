@@ -870,6 +870,36 @@ class ProductionSettingsHardeningTests(SimpleTestCase):
         backend = settings.STORAGES["staticfiles"].get("BACKEND", "")
         self.assertIn("whitenoise", backend.lower())
 
+    def test_render_external_hostname_detection_and_allowed_hosts_parsing(self):
+        from config.settings import parse_allowed_hosts
+
+        # 1. Existing comma-separated host configuration supported with whitespace stripping
+        hosts = parse_allowed_hosts("  api.skillsphere.com , custom.example.com , localhost  ")
+        self.assertEqual(hosts, ["api.skillsphere.com", "custom.example.com", "localhost"])
+
+        # 2. Render external hostname included when set
+        render_hosts = parse_allowed_hosts(
+            "localhost,127.0.0.1",
+            "skillsphere-backend-glun.onrender.com"
+        )
+        self.assertEqual(
+            render_hosts,
+            ["localhost", "127.0.0.1", "skillsphere-backend-glun.onrender.com"]
+        )
+
+        # 3. Absent, None, or empty Render hostname does not alter existing configuration
+        self.assertEqual(parse_allowed_hosts("localhost,127.0.0.1", None), ["localhost", "127.0.0.1"])
+        self.assertEqual(parse_allowed_hosts("localhost,127.0.0.1", ""), ["localhost", "127.0.0.1"])
+        self.assertEqual(parse_allowed_hosts("localhost,127.0.0.1", "   "), ["localhost", "127.0.0.1"])
+
+        # 4. Duplicate hostnames are not added if already present in ALLOWED_HOSTS
+        deduped = parse_allowed_hosts(
+            "skillsphere-backend-glun.onrender.com,localhost",
+            "  skillsphere-backend-glun.onrender.com  "
+        )
+        self.assertEqual(deduped, ["skillsphere-backend-glun.onrender.com", "localhost"])
+        self.assertEqual(deduped.count("skillsphere-backend-glun.onrender.com"), 1)
+
 
 class NginxAndStaticRoutingTests(SimpleTestCase):
     """

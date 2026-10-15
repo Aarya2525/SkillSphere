@@ -62,8 +62,22 @@ def validate_production_secret(secret_key: str, debug: bool) -> None:
 if not any(arg in sys.argv for arg in ("test", "collectstatic")):
     validate_production_secret(SECRET_KEY, DEBUG)
 
+def parse_allowed_hosts(raw_hosts: str | None, render_hostname: str | None = None) -> list[str]:
+    """
+    Parse a comma-separated list of allowed hostnames and append RENDER_EXTERNAL_HOSTNAME if present.
+    Preserves exact comma-separated parsing, strips whitespace, and avoids duplicates.
+    """
+    hosts = [h.strip() for h in raw_hosts.split(",") if h.strip()] if raw_hosts else []
+    if render_hostname:
+        cleaned_render = render_hostname.strip()
+        if cleaned_render and cleaned_render not in hosts:
+            hosts.append(cleaned_render)
+    return hosts
+
+
 allowed_hosts_str = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1")
-ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_str.split(",") if h.strip()] if allowed_hosts_str else []
+render_external_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "")
+ALLOWED_HOSTS = parse_allowed_hosts(allowed_hosts_str, render_external_hostname)
 
 
 # Application definition
