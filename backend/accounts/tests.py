@@ -751,6 +751,125 @@ class ProductionSettingsHardeningTests(SimpleTestCase):
         )
         self.assertEqual(result_dev.returncode, 0)
 
+    def test_parse_database_url_standard_postgres(self):
+        from config.settings import parse_database_url
+
+        # 1. Standard postgresql:// URL
+        url = "postgresql://myuser:mypassword@db.example.com:5432/skillsphere_prod"
+        config = parse_database_url(url)
+        self.assertEqual(config["ENGINE"], "django.db.backends.postgresql")
+        self.assertEqual(config["NAME"], "skillsphere_prod")
+        self.assertEqual(config["USER"], "myuser")
+        self.assertEqual(config["PASSWORD"], "mypassword")
+        self.assertEqual(config["HOST"], "db.example.com")
+        self.assertEqual(config["PORT"], "5432")
+        self.assertNotIn("OPTIONS", config)
+
+        # 2. postgres:// alias with custom port
+        url_alias = "postgres://custom_user:custom_pass@postgres-host:6543/custom_db"
+        config_alias = parse_database_url(url_alias)
+        self.assertEqual(config_alias["ENGINE"], "django.db.backends.postgresql")
+        self.assertEqual(config_alias["NAME"], "custom_db")
+        self.assertEqual(config_alias["USER"], "custom_user")
+        self.assertEqual(config_alias["PASSWORD"], "custom_pass")
+        self.assertEqual(config_alias["HOST"], "postgres-host")
+        self.assertEqual(config_alias["PORT"], "6543")
+
+    def test_parse_database_url_encoded_credentials(self):
+        from config.settings import parse_database_url
+
+        # URL with percent-encoded special characters in username and password
+        url = "postgresql://user%40skillsphere.com:p%40ss%23word%2599@db.supabase.co:5432/production_db"
+        config = parse_database_url(url)
+        self.assertEqual(config["USER"], "user@skillsphere.com")
+        self.assertEqual(config["PASSWORD"], "p@ss#word%99")
+        self.assertEqual(config["NAME"], "production_db")
+        self.assertEqual(config["HOST"], "db.supabase.co")
+
+    def test_parse_database_url_sslmode_query_param(self):
+        from config.settings import parse_database_url
+
+        # URL containing ?sslmode=require
+        url = "postgresql://user:pass@db.supabase.co:5432/postgres?sslmode=require"
+        config = parse_database_url(url)
+        self.assertIn("OPTIONS", config)
+        self.assertEqual(config["OPTIONS"].get("sslmode"), "require")
+
+    def test_parse_database_url_unsupported_scheme_rejected(self):
+        from config.settings import parse_database_url
+
+        with self.assertRaises(ValueError) as ctx:
+            parse_database_url("mysql://user:pass@localhost:3306/db")
+        self.assertIn("Unsupported database scheme", str(ctx.exception))
+        # Ensure credentials are not in exception message
+        self.assertNotIn("pass", str(ctx.exception))
+
+        # URL without valid scheme must not leak credentials
+        with self.assertRaises(ValueError) as ctx2:
+            parse_database_url("user:secret_pwd@localhost:5432/db")
+        self.assertIn("Unsupported database scheme", str(ctx2.exception))
+        self.assertNotIn("secret_pwd", str(ctx2.exception))
+
+    def test_parse_database_url_missing_hostname_rejected(self):
+        from config.settings import parse_database_url
+
+        # Missing host with path only
+        with self.assertRaises(ValueError) as ctx:
+            parse_database_url("postgresql:///skillsphere_prod")
+        self.assertIn("DATABASE_URL must include a valid hostname", str(ctx.exception))
+
+        # Missing host with credentials
+        with self.assertRaises(ValueError) as ctx2:
+            parse_database_url("postgresql://user:secret_pass_123@/skillsphere_prod")
+        self.assertIn("DATABASE_URL must include a valid hostname", str(ctx2.exception))
+        self.assertNotIn("secret_pass_123", str(ctx2.exception))
+        self.assertNotIn("user", str(ctx2.exception))
+
+    def test_parse_database_url_invalid_port_rejected(self):
+        from config.settings import parse_database_url
+
+        # Non-numeric port
+        with self.assertRaises(ValueError) as ctx:
+            parse_database_url("postgresql://user:secret_pass@db.example.com:not_a_port/db")
+        self.assertIn("DATABASE_URL contains an invalid port", str(ctx.exception))
+        self.assertNotIn("secret_pass", str(ctx.exception))
+
+        # Out-of-range port
+        with self.assertRaises(ValueError) as ctx2:
+            parse_database_url("postgresql://user:secret_pass@db.example.com:99999/db")
+        self.assertIn("DATABASE_URL contains an invalid port", str(ctx2.exception))
+        self.assertNotIn("secret_pass", str(ctx2.exception))
+
+    def test_database_default_fallback_preserves_local_configuration(self):
+        from django.conf import settings
+
+        default_db = settings.DATABASES["default"]
+        self.assertEqual(default_db["ENGINE"], "django.db.backends.postgresql")
+        self.assertIn("NAME", default_db)
+        self.assertIn("USER", default_db)
+        self.assertIn("PASSWORD", default_db)
+        self.assertIn("HOST", default_db)
+        self.assertIn("PORT", default_db)
+        self.assertIn("CONN_MAX_AGE", default_db)
+
+    def test_whitenoise_middleware_configured(self):
+        from django.conf import settings
+
+        middleware = list(settings.MIDDLEWARE)
+        self.assertIn("whitenoise.middleware.WhiteNoiseMiddleware", middleware)
+
+        security_idx = middleware.index("django.middleware.security.SecurityMiddleware")
+        whitenoise_idx = middleware.index("whitenoise.middleware.WhiteNoiseMiddleware")
+        # WhiteNoise must immediately follow SecurityMiddleware
+        self.assertEqual(whitenoise_idx, security_idx + 1)
+
+    def test_whitenoise_storage_configuration(self):
+        from django.conf import settings
+
+        self.assertIn("staticfiles", settings.STORAGES)
+        backend = settings.STORAGES["staticfiles"].get("BACKEND", "")
+        self.assertIn("whitenoise", backend.lower())
+
 
 class NginxAndStaticRoutingTests(SimpleTestCase):
     """

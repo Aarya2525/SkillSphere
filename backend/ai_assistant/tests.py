@@ -461,3 +461,24 @@ class AIAssistantSecurityAndSafetyTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIn("error", response.data)
         mock_ask_tutor.assert_not_called()
+
+    # 23. Environment-configured mock AI provider returns response without API key
+    @override_settings(AI_PROVIDER="mock", AI_API_KEY="")
+    def test_mock_ai_provider_configuration_and_response(self):
+        from .providers import get_ai_provider
+
+        provider = get_ai_provider()
+        self.assertIsInstance(provider, MockAIProvider)
+
+        # ask_tutor uses the configured provider when none is passed
+        response = ask_tutor(self.lesson_1, "Explain this concept in simple terms.")
+        self.assertTrue(len(response) > 0)
+        self.assertIn("SkillSphere AI tutor", response)
+
+        # API view returns 200 OK without external API keys
+        self._authenticate(self.enrolled_student)
+        payload = {"lesson_id": self.lesson_1.id, "message": "Explain this concept in simple terms."}
+        res = self.client.post(self.url, payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("answer", res.data)
+        self.assertIn("SkillSphere AI tutor", res.data["answer"])

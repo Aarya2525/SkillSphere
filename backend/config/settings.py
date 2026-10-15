@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import urlparse, unquote, parse_qs
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -94,6 +95,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -163,8 +165,68 @@ def parse_conn_max_age(value: str | None, default: int = 0) -> int:
 
 CONN_MAX_AGE = parse_conn_max_age(os.environ.get("CONN_MAX_AGE", "0"))
 
-DATABASES = {
-    "default": {
+
+def parse_database_url(url: str) -> dict:
+    """
+    Parse a postgresql:// or postgres:// connection URL into Django DATABASES config parameters.
+    Safely decodes percent-encoded usernames and passwords using standard library urllib.parse.
+    Extracts query parameters (such as sslmode) into the OPTIONS dictionary.
+    Never logs or exposes credentials.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("postgres", "postgresql"):
+        raise ValueError("Unsupported database scheme in DATABASE_URL. Must begin with postgresql:// or postgres://.")
+
+    if not parsed.hostname:
+        raise ValueError("DATABASE_URL must include a valid hostname.")
+
+    try:
+        raw_port = parsed.port
+    except ValueError:
+        raise ValueError("DATABASE_URL contains an invalid port.") from None
+
+    if raw_port is not None and not (1 <= raw_port <= 65535):
+        raise ValueError("DATABASE_URL contains an invalid port.")
+
+    name = parsed.path.lstrip("/") or "postgres"
+    user = unquote(parsed.username) if parsed.username else ""
+    password = unquote(parsed.password) if parsed.password else ""
+    host = parsed.hostname
+    port = str(raw_port) if raw_port is not None else "5432"
+
+    config = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": name,
+        "USER": user,
+        "PASSWORD": password,
+        "HOST": host,
+        "PORT": port,
+    }
+
+    query_params = parse_qs(parsed.query)
+    options = {}
+    if "sslmode" in query_params and query_params["sslmode"]:
+        options["sslmode"] = query_params["sslmode"][0]
+
+    if options:
+        config["OPTIONS"] = options
+
+    return config
+
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DB_SSLMODE = os.environ.get("DB_SSLMODE", "").strip()
+
+if DATABASE_URL:
+    default_db_config = parse_database_url(DATABASE_URL)
+    default_db_config["CONN_MAX_AGE"] = CONN_MAX_AGE
+    if DB_SSLMODE:
+        default_db_config.setdefault("OPTIONS", {})["sslmode"] = DB_SSLMODE
+    DATABASES = {
+        "default": default_db_config
+    }
+else:
+    default_db_config = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": DB_NAME,
         "USER": DB_USER,
@@ -173,7 +235,11 @@ DATABASES = {
         "PORT": DB_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
     }
-}
+    if DB_SSLMODE:
+        default_db_config["OPTIONS"] = {"sslmode": DB_SSLMODE}
+    DATABASES = {
+        "default": default_db_config
+    }
 
 
 # Password validation
@@ -214,6 +280,15 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 
 # Default primary key field type
