@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: '/api'
+  apiUrl: 'https://skillsphere-backend-g1un.onrender.com/api'
 };
